@@ -12,6 +12,7 @@
         "RecordsDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
         "BillingDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
         "TenancyDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
-        "EstoqueDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL"
+        "EstoqueDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "SubscriptionsDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL"
     }
 }

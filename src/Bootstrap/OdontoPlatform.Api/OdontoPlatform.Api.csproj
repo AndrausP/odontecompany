@@ -40,6 +40,9 @@
     <ProjectReference Include="..\..\Modules\Estoque\Estoque.Infrastructure\Estoque.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Estoque\Estoque.Application\Estoque.Application.csproj" />
     <ProjectReference Include="..\..\Modules\Estoque\Estoque.Contracts\Estoque.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\Subscriptions.Infrastructure\Subscriptions.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\Subscriptions.Application\Subscriptions.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Subscriptions\Subscriptions.Contracts\Subscriptions.Contracts.csproj" />
     <ProjectReference Include="..\..\Shared\Contracts.Abstractions\Contracts.Abstractions.csproj" />
     <ProjectReference Include="..\..\Shared\Infrastructure.Common\Infrastructure.Common.csproj" />
     <ProjectReference Include="..\..\Shared\Application.Common\Application.Common.csproj" />

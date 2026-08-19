@@ -26,6 +26,8 @@ using Estoque.Application.Commands.CreateItemEstoque;
 using Estoque.Infrastructure;
 using Tenancy.Application.Commands.CreateBranch;
 using Tenancy.Infrastructure;
+using Subscriptions.Application.Commands.SelectPlan;
+using Subscriptions.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +75,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(GetDashboardResumoQuery).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(CreateBranchCommand).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(CreateItemEstoqueCommand).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(SelectPlanCommand).Assembly);
 });
 builder.Services.AddValidatorsFromAssembly(typeof(LoginCommand).Assembly);
 builder.Services.AddValidatorsFromAssembly(typeof(CreatePatientCommand).Assembly);
@@ -82,6 +85,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateFaturaParticularCommand)
 builder.Services.AddValidatorsFromAssembly(typeof(GetDashboardResumoQuery).Assembly);
 builder.Services.AddValidatorsFromAssembly(typeof(CreateBranchCommand).Assembly);
 builder.Services.AddValidatorsFromAssembly(typeof(CreateItemEstoqueCommand).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(SelectPlanCommand).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 // ── Módulo Identity (EF Core, Argon2id, emissor JWT, repositórios) ──────────
@@ -109,6 +113,10 @@ builder.Services.AddTenancyInfrastructure(builder.Configuration);
 
 // ── Módulo Estoque (EF Core, materiais/insumos — Fase 5) ─────────────────────
 builder.Services.AddEstoqueInfrastructure(builder.Configuration);
+
+// ── Módulo Subscriptions (EF Core, plano da PLATAFORMA + esqueleto Stripe — sprint-11) ──────
+// Não confundir com Billing (faturamento do PACIENTE, domínio irmão separado).
+builder.Services.AddSubscriptionsInfrastructure(builder.Configuration);
 
 // ── Autenticação JWT ──────────────────────────────────────────────────────
 // Fail-fast: se a seção "Jwt" sumir do config, ou se a SigningKey ainda for o valor default de

@@ -143,6 +143,21 @@
   `/signup`, cobrança é dívida técnica registrada, não implementada — fonte: grill-me do usuário,
   task docs/tasks/038-landing-page-publica.md.
 
+- [2026-08-19] Organização sem plano ativo (`Subscriptions.Subscription`) é bloqueada de acessar o
+  app — mesmo tratamento de organização inexistente (`RequireOrganization`/`/onboarding`).
+  Escolher plano nesta rodada NÃO cobra (upsert direto, `Status=Ativa`) — checkout real (Stripe)
+  é dívida técnica nomeada, endpoint/porta existem mas não chamam API externa nenhuma — fonte:
+  grill-me do usuário, task docs/tasks/039-sistema-planos-onboarding-completo.md.
+- [2026-08-19] 3 planos fixos (não configuráveis por Admin/seed): Starter (1 filial, R$129/mês),
+  Profissional (3 filiais, R$349/mês), Rede (filiais ilimitadas, preço sob consulta) — fonte única
+  `Subscriptions.Domain.PlanCatalog`, espelhada na landing e no onboarding. Criar filial além do
+  limite do plano ativo é bloqueado (`Branch.LimiteDoPlanoAtingido`) — fonte: task
+  docs/tasks/039-sistema-planos-onboarding-completo.md.
+- [2026-08-19] Organization (Cnpj/Telefone/Endereco) e Branch (Telefone) ganham campos opcionais
+  na criação — só o Nome continua obrigatório, resto é "configurar depois" (sem tela de edição
+  dedicada ainda, dívida técnica nomeada) — fonte: pedido do usuário, task
+  docs/tasks/039-sistema-planos-onboarding-completo.md.
+
 Registrar novas com `/law [regra]` ou via primeira pergunta do `/bigtask`.
 
 ## Regras inferidas

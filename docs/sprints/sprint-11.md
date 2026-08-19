@@ -23,6 +23,7 @@ guiado (feature grande, grill-me próprio).
 | 036 | Backend: `User.OnboardingSkipped` + skip-onboarding | done | Dev Backend |
 | 037 | Frontend: onboarding guiado (Empresa → Unidade) + skip | done | Dev Frontend |
 | 038 | Landing page pública ("/") com pricing vitrine | done | Dev Frontend |
+| 039 | Sistema de planos + onboarding completo + esqueleto Stripe | done | Broker |
 
 <!-- Status possíveis: planned | in-progress | blocked | done -->
 
@@ -82,3 +83,13 @@ docs/decisions.md, regras em docs/knowledge/business-rules.md.
 Verificação: `dotnet build` (backend) e `npm run build`/`npm run lint` (frontend) limpos em todas
 as 4 tasks desta reabertura; landing e onboarding validados ao vivo via claude-in-chrome
 (navegação real no browser, sem mock).
+
+## Reabertura 4 (039) — planos + onboarding completo + esqueleto Stripe
+
+Usuário pediu, na sequência: mais dados na criação de empresa/unidade (configuráveis depois),
+bloquear quem não tem plano, e esqueleto de conexão com Stripe. Grill-me: módulo novo
+`Subscriptions` (não dentro de `Billing`, que é faturamento do paciente); "bloquear" = organização
+escolhe um plano no onboarding (sem cobrança real ainda), sem plano = mesmo bloqueio de sem
+organização. Onboarding virou 3 passos (Empresa→Plano→Unidade). 2 bugs de state real encontrados
+e corrigidos testando ao vivo — detalhes em docs/knowledge/errors-aprendidos.md e
+docs/tasks/039-sistema-planos-onboarding-completo.md. `dotnet test` completo: 341/341 passando.

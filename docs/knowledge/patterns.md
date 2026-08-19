@@ -732,3 +732,61 @@ dentro do handler.
 **Exemplo:** `features/marketing/LandingPage.tsx` — `ctaPrimary`/`ctaSecondary` (classes copiadas
 de `Button.tsx` variant `primary`/`secondary`) aplicadas direto em `<Link>` no nav, hero e cards
 de plano; zero `<Button>` na página inteira.
+
+## Módulo novo cross-module: só `*.Contracts` referenciado por fora, nunca `*.Domain`/`*.Infrastructure`
+
+**Camada/área:** Application | Architecture
+**Definido por:** Architect (task docs/tasks/039-sistema-planos-onboarding-completo.md, Sprint 11)
+**Descrição:** Quando um módulo novo precisa ser consultado por módulos já existentes (aqui:
+`Subscriptions` por `Identity` — GetMe expõe o plano ativo — e por `Tenancy` — CreateBranch checa
+limite de filial), a dependência entra SÓ no `*.Application.csproj` do módulo consumidor, apontando
+pro `*.Contracts.csproj` do módulo novo (nunca `*.Domain`/`*.Infrastructure`) — mesma fronteira já
+usada por `IBranchLookup`/`IPatientLookup`. A interface do lookup (`ISubscriptionLookup`) mora no
+`Contracts`, a implementação real (`SubscriptionLookup`, EF Core) mora no `Infrastructure` do
+módulo dono, registrada no `DependencyInjection.cs` dele — quem consome só injeta a interface.
+**Quando usar:** Todo módulo novo que expõe estado pra outros módulos lerem (não escrever) — CRUD
+completo fica dentro do módulo dono (Application/Infrastructure próprios), só a LEITURA
+cross-module vira porta em Contracts.
+**Exemplo:** `Tenancy.Application.csproj` ganhou `<ProjectReference>` só pra
+`Subscriptions.Contracts.csproj`; `CreateBranchCommandHandler` injeta `ISubscriptionLookup`
+(nunca viu `Subscriptions.Domain.Entities.Subscription` nem `SubscriptionsDbContext`).
+
+## Esqueleto de integração externa: porta real + implementação que loga e devolve placeholder, nunca throw
+
+**Camada/área:** Infrastructure | Backend
+**Definido por:** Dev Backend (task docs/tasks/039-sistema-planos-onboarding-completo.md, Sprint 11)
+**Descrição:** Quando o pedido é "conexão com X ainda não precisa funcionar mas o esqueleto tem
+que existir" (aqui: Stripe), a porta (`IPaymentGatewayService`) e o Command/Handler que a usa
+(`StartCheckoutCommand`) são construídos completos e reais — o único "fake" é a implementação de
+Infrastructure (`StripePaymentGatewayService`), que NÃO instala o SDK do provedor nem faz nenhuma
+chamada de rede: loga a intenção (`ILogger`) e devolve um valor de placeholder plausível (aqui,
+uma URL fake + id gerado). Nunca lança `NotImplementedException` — isso quebraria qualquer teste
+de integração/E2E que exercite o fluxo antes do dia em que o provedor real for conectado. Mesmo
+padrão já usado em `IConvenioAdapter`/`ManualConvenioAdapter` (Billing, ver docs/decisions.md).
+**Quando usar:** Todo pedido de "esqueleto"/"skeleton" de integração externa (gateway de
+pagamento, provedor de email, serviço de terceiro qualquer) sem credencial/conta disponível ainda.
+**Exemplo:** `Subscriptions.Infrastructure.Payments.StripePaymentGatewayService.CriarCheckoutSessionAsync`
+— devolve `about:blank#stripe-checkout-esqueleto-{id}` e loga via `ILogger`, sem `Stripe.net` no
+`.csproj`. Trocar por chamada real ao SDK não muda `StartCheckoutCommandHandler` nem o controller.
+
+## Onboarding multi-passo: estado "como chegou" trava em `ref` na entrada, guard de atalho respeita o `step` local
+
+**Camada/área:** Presentation | UI
+**Definido por:** Dev Frontend (task docs/tasks/039-sistema-planos-onboarding-completo.md, Sprint 11)
+**Descrição:** Um fluxo de N passos guiado por `useState<Step>` local, onde CADA passo pode mudar
+o mesmo cache assíncrono (`useMe()`) que decide o passo seguinte, tem 2 armadilhas — ambas achadas
+ao vivo nesta task, ver docs/knowledge/errors-aprendidos.md pro relato completo: (1) todo "o que
+o usuário já tinha antes de começar" precisa travar num `useRef` no primeiro render com dado
+carregado, nunca recalculado depois (senão o passo 1 muda o cache e o componente passa a achar que
+"sempre teve" o que acabou de criar); (2) todo guard de atalho tipo `if (dataJáCompleta) return
+<Navigate/>` no topo do componente precisa checar também se o `step` local está em transição
+deliberada (`step === null`) — senão o guard dispara no meio de uma transição explícita, porque o
+cache já reflete o resultado final antes do próximo passo ter chance de renderizar.
+**Quando usar:** Qualquer wizard/onboarding de múltiplos passos onde os passos escrevem no MESMO
+cache (React Query) que o componente lê pra decidir navegação — não só quando há mutation entre
+passos, mas especificamente quando o mesmo `queryKey` alimenta tanto a decisão de "por onde
+entrar" quanto o guard de "já terminei".
+**Exemplo:** `OnboardingPage.tsx` — `hadOrganizationOnArrivalRef` (useRef, travado uma vez) decide
+se escolher o plano vai pro passo "unidade" ou direto pro app; o guard de topo
+`if (step === null && data.organizations.length > 0 && data.activePlanTier)` só atalha em chegada
+fria, nunca no meio de uma transição de `step` já em andamento.

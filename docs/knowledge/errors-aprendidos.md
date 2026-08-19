@@ -465,3 +465,46 @@ já-Utc/Local→`ToUniversalTime()`).
 espalhado handler a handler (frágil — o próximo campo de data novo em qualquer módulo repete o
 mesmo 500). A correção certa é sempre na convenção do `DbContext`, uma vez por módulo, coberta
 pelos 7 de uma vez quando o bug aparecer de novo em qualquer um deles.
+
+## [2026-08-19] Onboarding guiado (Empresa→Plano→Unidade) pulava passo depois de recalcular estado derivado a cada render
+
+**Task:** docs/tasks/039-sistema-planos-onboarding-completo.md
+**Causa raiz:** `OnboardingPage.tsx` decidia se o usuário "já tinha organization ao chegar"
+(`hadOrganizationOnArrival`) recalculando `data.organizations.length > 0` em TODO render, a
+partir do cache `useMe()` — não travava esse valor no momento em que o componente montou. Criar a
+organization no passo 1 muda `data.organizations` no MESMO cache (`queryClient.clear()` dentro de
+`CreateOrganizationForm`), então no render seguinte esse booleano virava `true` mesmo pra quem
+tinha chegado sem organization nenhuma — o código então tratava "acabei de criar" como "já tinha
+antes", pulando o passo de criar a primeira unidade.
+**Sintoma:** Fluxo completo (Empresa→Plano→Unidade) funcionava até escolher o plano — depois
+disso, batia direto em `/agenda` sem nunca mostrar o formulário de criar a 1ª unidade, mesmo pra
+usuário 100% novo (zero organization antes de começar).
+**Correção:** `hadOrganizationOnArrival` virou `useRef<boolean|null>`, setado só UMA vez (no
+primeiro render em que `data` já carregou, `hadOrganizationOnArrivalRef.current === null`),
+nunca recalculado depois disso.
+**Como evitar de novo:** Estado que representa "como as coisas ESTAVAM quando o usuário chegou"
+(pra decidir o próximo passo de um fluxo multi-etapa) nunca pode ser derivado direto de um cache
+que o próprio fluxo modifica (aqui, `useMe()` — a criação de organization no passo 1 invalida o
+mesmo cache) — precisa ser travado em `ref`/`state` na entrada, não recalculado a cada render.
+
+## [2026-08-19] Onboarding: guard de "já tem organization+plano" não respeitava o step explícito da máquina de estado local
+
+**Task:** docs/tasks/039-sistema-planos-onboarding-completo.md
+**Causa raiz:** Depois de escolher o plano (`onSelected`), o código invalidava o cache `['me']`
+(fix do bug anterior) e chamava `setStep('unidade')` — mas ANTES desse `if (effectiveStep ===
+'unidade')` renderizar, um guard de topo do componente (`if (data.organizations.length > 0 &&
+data.activePlanTier) return <Navigate to="/agenda" />`) já disparava, porque `data` (agora
+invalidado/refetched) mostrava organization+plano prontos. O guard não sabia que o usuário estava
+DELIBERADAMENTE no meio do fluxo (`step` setado pra `'unidade'` na mesma função) — só olhava pro
+estado "final" no banco.
+**Sintoma:** Mesmo depois do fix do bug anterior (ref travado corretamente), o passo "criar
+unidade" continuava sendo pulado — ia direto pra `/agenda` assim que o plano era escolhido, pra
+QUALQUER usuário (novo ou resumindo), não só pra quem tinha chegado com organization.
+**Correção:** Guard trocado pra `if (step === null && ...)` — só dispara quando nenhuma transição
+de step aconteceu NESTA visita (chegada "fria", sem interação). Uma vez que `step` foi setado
+explicitamente pelo menos uma vez, o guard nunca mais interfere; a navegação passa a ser
+inteiramente responsabilidade dos `navigate()`/`setStep()` explícitos de cada callback.
+**Como evitar de novo:** Num componente com máquina de estado local (`step`) E dado derivado de
+um cache assíncrono (`data`), todo guard de "atalho" baseado só em `data` precisa checar também
+se o usuário já está numa transição de `step` deliberada — senão o guard corrida contra a própria
+intenção do fluxo assim que o cache atualiza no meio de uma transição.

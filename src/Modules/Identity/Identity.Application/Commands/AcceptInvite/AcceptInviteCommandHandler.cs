@@ -68,8 +68,21 @@ public sealed class AcceptInviteCommandHandler : IRequestHandler<AcceptInviteCom
 
         if (existingMembership is not null)
         {
-            // Idempotência: usuário já é membro (ex: aceitou por engano de novo, ou corrida entre
-            // duas abas) — não duplica membership (índice único quebraria), só fecha o convite.
+            if (!existingMembership.IsAtivo)
+            {
+                // Task 020 — membership tinha sido desativada (ex: Owner removeu, depois convidou
+                // de novo). Reativa em vez de ficar presa em Inativo com resposta de sucesso
+                // (bug latente descrito em docs/knowledge/errors-aprendidos.md). Papel do convite
+                // novo prevalece — ver nota em OrganizationMembership.Reativar.
+                existingMembership.Reativar(invite.Role);
+                invite.Accept();
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return Result.Success(new AcceptInviteResultDto(invite.OrganizationId, existingMembership.Role));
+            }
+
+            // Idempotência: usuário já é membro ativo (ex: aceitou por engano de novo, ou corrida
+            // entre duas abas) — não duplica membership (índice único quebraria), só fecha o
+            // convite, sem mudar o papel já existente.
             invite.Accept();
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return Result.Success(new AcceptInviteResultDto(invite.OrganizationId, existingMembership.Role));

@@ -351,10 +351,13 @@ usuário acredita que entrou na organização, mas a membership continua `Inativ
 próxima requisição autenticada dele nessa org falha, porque a eleição de organização no login
 (`GetActiveMembershipsForUserAcrossOrganizationsAsync`) filtra por `Ativo` e não a retorna. Sem
 exception, sem erro visível no momento do accept — só na tentativa seguinte de uso.
-**Correção:** Nenhuma ainda — débito aceito conscientemente pelo QA/Writer nesta task, não
-bloqueante pro merge. Task de follow-up obrigatória antes de qualquer endpoint que desative
-membership entrar em produção: `docs/tasks/020-membership-reativar-em-invite.md` (`Reativar()` no
-Domain + uso no handler quando a membership existente estiver inativa).
+**Correção:** Feita em 2026-08-19 (`docs/tasks/020-membership-reativar-em-invite.md`, status
+`done`). `OrganizationMembership.Reativar(Role role)` novo no Domain (seta `Ativo` + atualiza
+`Role` pro papel do convite novo, mesmo padrão incondicional de `Desativar()`).
+`AcceptInviteCommandHandler` agora bifurca em `existingMembership.IsAtivo`: `true` mantém o
+comportamento antigo (idempotência, papel preservado); `false` chama `Reativar(invite.Role)` antes
+de aceitar o convite. Teste de regressão:
+`Should_ReactivateMembership_When_AcceptingInviteForInactiveMembership`.
 **Por que não é crítico hoje:** grep confirma que NÃO existe nenhum caminho de API que dispare
 `OrganizationMembership.Desativar()` — o método existe no Domain (soft-delete), mas nenhum
 handler o invoca ainda. O cenário só é atingível via seed/migration/acesso direto ao banco;
@@ -366,6 +369,37 @@ recurso, não só sua presença — `existingMembership is not null` não é o m
 qualquer endpoint de "remover/desativar membro" (roadmap Fase 1, Identity) — nesse dia, o fluxo
 "desativar → convidar de novo → aceitar" vira alcançável via API e o silent fail aqui descrito
 vira bug de produção instantâneo.
+
+## [2026-08-19] `JsonSerializerOptions` custom sem `PropertyNameCaseInsensitive`/`PropertyNamingPolicy` derruba silenciosamente `ReadFromJsonAsync<T>()` — sem exceção, campo vira `null`
+
+**Task:** docs/tasks/021-bootstrap-integration-tests.md (achado lateral, não o objetivo da task)
+**Causa raiz:** `System.Net.Http.Json.HttpContentJsonExtensions.ReadFromJsonAsync<T>()` SEM
+`JsonSerializerOptions` explícitas usa por baixo dos panos um fallback "web" implícito
+(`PropertyNameCaseInsensitive = true`, efetivamente tolerante a `camelCase` vs `PascalCase`).
+Passar um `JsonSerializerOptions` PRÓPRIO (ex.: só pra registrar `JsonStringEnumConverter`, porque
+a API serializa enum como string) SUBSTITUI esse fallback inteiro por um `JsonSerializerOptions`
+"puro" — `PropertyNameCaseInsensitive = false` e `PropertyNamingPolicy = null` (exige match EXATO
+de nome, `Foo` ≠ `foo`) por padrão. A API (ASP.NET Core MVC, `AddJsonOptions`) serializa em
+`camelCase` (`"accessToken"`); os DTOs client-side eram records em `PascalCase`
+(`AccessToken`) — nenhuma propriedade batia, `JsonSerializer` (que usa construtor parametrizado
+pra records) simplesmente não populava os parâmetros não-casados, cada um ficando com o `default`
+do tipo (`string` → `null`) **sem lançar exceção**.
+**Sintoma:** `signup.AccessToken` era `null`/`""` sem erro visível na chamada de signup em si — só
+estourava 401 Unauthorized bem mais adiante, na PRÓXIMA chamada HTTP que usava esse token vazio
+como Bearer. 8 de 9 testes de integração falharam em cascata com a mesma causa raiz mascarada
+atrás de "AuthenticationScheme: Bearer was challenged" — sem stack trace nenhum apontando pro JSON.
+**Correção:** `JsonSerializerOptions` custom que vai substituir o default do
+`ReadFromJsonAsync`/`PostAsJsonAsync` precisa REPLICAR manualmente o que o fallback "web" já dava:
+`PropertyNameCaseInsensitive = true` (ou `PropertyNamingPolicy = JsonNamingPolicy.CamelCase`
+explícito, mais correto quando o client também SERIALIZA request com essas options — caso de
+`JsonSerializer.Deserialize` direto, que não tem fallback "web" nenhum). Ver
+`tests/Api.IntegrationTests/AuthFlow.cs`, `JsonOptions`.
+**Como evitar de novo:** Toda vez que precisar de `JsonSerializerOptions` custom num client HTTP
+C# (teste de integração, SDK client, etc.) contra uma API ASP.NET Core, partir de
+`new JsonSerializerOptions(JsonSerializerDefaults.Web)` (que JÁ inclui case-insensitive +
+camelCase) e só ADICIONAR o que falta (ex.: `Converters.Add(new JsonStringEnumConverter())`), em
+vez de `new JsonSerializerOptions()` vazio + preencher tudo na mão — reduz a chance de esquecer
+uma das 2-3 opções que o fallback implícito cobria de graça.
 
 ## [2026-08-19] Widening de RBAC (Owner) corrigido só no backend (030) — mesmo padrão de gate quebrado reapareceu em 4 arquivos do frontend
 

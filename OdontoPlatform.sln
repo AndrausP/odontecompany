@@ -121,6 +121,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Estoque.UnitTests", "tests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OdontoPlatform.Api.UnitTests", "tests\OdontoPlatform.Api.UnitTests\OdontoPlatform.Api.UnitTests.csproj", "{78B7D466-6FDE-4557-BE37-05DF43186E7D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.IntegrationTests", "tests\Api.IntegrationTests\Api.IntegrationTests.csproj", "{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -659,6 +661,18 @@ Global
 		{78B7D466-6FDE-4557-BE37-05DF43186E7D}.Release|x64.Build.0 = Release|Any CPU
 		{78B7D466-6FDE-4557-BE37-05DF43186E7D}.Release|x86.ActiveCfg = Release|Any CPU
 		{78B7D466-6FDE-4557-BE37-05DF43186E7D}.Release|x86.Build.0 = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|x64.Build.0 = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Debug|x86.Build.0 = Debug|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|x64.ActiveCfg = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|x64.Build.0 = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|x86.ActiveCfg = Release|Any CPU
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -719,5 +733,6 @@ Global
 		{44C0CCEC-6A7D-42BE-8BD4-6180E55CAF1B} = {FF08843D-E67F-5F21-4F42-4F69E9A34A9F}
 		{EE584F14-1759-4159-B51F-2DA525707D76} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{78B7D466-6FDE-4557-BE37-05DF43186E7D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{7806553C-5BCE-4BBB-BDF8-67D3EFFB1667} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

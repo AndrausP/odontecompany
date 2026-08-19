@@ -182,4 +182,32 @@ public class AcceptInviteCommandHandlerTests
         Assert.That(invite.Status, Is.EqualTo(InviteStatus.Aceito));
         _membershipRepository.Verify(r => r.AddAsync(It.IsAny<OrganizationMembership>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Test]
+    public async Task Should_ReactivateMembership_When_AcceptingInviteForInactiveMembership()
+    {
+        // Task 020 — bug latente: membership desativada (ex: Owner removeu, depois re-convidou)
+        // não podia ficar presa em Inativo com resposta de sucesso. Convite novo tem Role.Dentista;
+        // membership antiga era Role.Admin — reativação deve adotar o papel do convite novo.
+        var organizationId = Guid.NewGuid();
+        var invite = BuildPendingInvite(organizationId);
+        var user = User.Create("Convidado", "convidado@clinica.com", "hash").Value;
+        var existingMembership = OrganizationMembership.Create(organizationId, user.Id, Role.Admin).Value;
+        existingMembership.Desativar();
+
+        _inviteRepository.Setup(r => r.GetByTokenHashAcrossOrganizationsAsync("token-hash", It.IsAny<CancellationToken>())).ReturnsAsync(invite);
+        _userRepository.Setup(r => r.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _membershipRepository
+            .Setup(r => r.GetByUserAndOrganizationAcrossOrganizationsAsync(user.Id, organizationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingMembership);
+
+        var result = await _handler.Handle(new AcceptInviteCommand(user.Id, "token-plano"), CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(existingMembership.IsAtivo, Is.True, "membership deve sair de Inativo, não ficar presa");
+        Assert.That(result.Value.Role, Is.EqualTo(Role.Dentista), "reativação adota o papel do convite novo, não preserva o papel antigo");
+        Assert.That(invite.Status, Is.EqualTo(InviteStatus.Aceito));
+        _membershipRepository.Verify(r => r.AddAsync(It.IsAny<OrganizationMembership>(), It.IsAny<CancellationToken>()), Times.Never, "reativa a existente, não cria uma nova (quebraria o índice único)");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

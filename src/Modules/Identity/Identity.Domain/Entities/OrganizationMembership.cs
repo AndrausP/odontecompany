@@ -54,4 +54,22 @@ public class OrganizationMembership : Entity, IMustHaveOrganization
         Status = MembershipStatus.Inativo;
         SetUpdatedAt();
     }
+
+    /// <summary>
+    /// Task 020 — reativa uma membership <see cref="MembershipStatus.Inativo"/> ao aceitar um
+    /// convite novo pra mesma organization. Não cria registro novo (preserva o índice único
+    /// <c>(OrganizationId, UserId)</c>) — é o mesmo padrão soft-state de <see cref="Desativar"/>,
+    /// só invertido. <paramref name="role"/> vem do convite que disparou a reativação: quem
+    /// re-convida escolhe o papel explicitamente, então o papel do convite prevalece sobre o papel
+    /// antigo (possivelmente obsoleto) da membership desativada — ver docs/decisions.md.
+    /// Sem guarda de "já ativo": mesmo padrão incondicional de <see cref="Desativar"/>; o único
+    /// call site (<c>AcceptInviteCommandHandler</c>) só chama isto quando <see cref="IsAtivo"/> já
+    /// é false.
+    /// </summary>
+    public void Reativar(Role role)
+    {
+        Status = MembershipStatus.Ativo;
+        Role = role;
+        SetUpdatedAt();
+    }
 }

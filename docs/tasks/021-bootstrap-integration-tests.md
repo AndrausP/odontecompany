@@ -1,12 +1,12 @@
 ---
 task: "021"
-sprint: "a definir"
-status: planned
+sprint: "10"
+status: done
 ---
 
 # 021 — Bootstrap de suíte de integração com `WebApplicationFactory`
 
-**Sprint:** a definir (backlog, achado durante docs/sprints/sprint-6.md — não é sprint-7 ainda)
+**Sprint:** docs/sprints/sprint-10.md (puxada do backlog de docs/sprints/sprint-6.md)
 **Critério de aceite:** Projeto de testes de integração novo (`Microsoft.AspNetCore.Mvc.Testing`)
 capaz de subir a API in-memory (HTTP real, pipeline de middleware real — auth, policies, rate
 limiting, routing) e rodar pelo menos os 5 casos hoje cobertos só por inspeção estática (ver
@@ -36,22 +36,31 @@ Nenhum desses é um bug conhecido — é lacuna de cobertura. Config declarativa
 refatoração futura (ex: alguém remove um atributo sem querer) sem que nenhum teste unitário de
 handler detecte, porque teste de handler nunca passa pelo pipeline de middleware/routing/auth.
 
-## Escopo técnico (rascunho — Tech Lead confirma ao puxar da fila)
+## Escopo técnico (implementado)
 
-1. Projeto novo `tests/Api.IntegrationTests` referenciando `Microsoft.AspNetCore.Mvc.Testing` +
-   `WebApplicationFactory<Program>` (ou `Bootstrap.OdontoPlatform.Api` — confirmar entry point
-   público/`partial class Program` se necessário).
-2. Banco de teste: decidir entre `UseInMemoryDatabase` sobrescrito via `IHostBuilder` custom (mais
-   rápido, mas não exercita SQL/constraints reais) ou um Postgres real efêmero (mais fiel, custo de
-   infraestrutura de CI) — **decisão do Architect**, não do Dev que implementa.
-3. Helper de autenticação de teste (emitir JWT válido de teste com claims controladas — inclusive
-   o cenário "sem `organization_id`") pra exercitar os 5 casos da Origem sem precisar re-implementar
-   login em cada teste.
-4. Os 5 casos da Origem viram testes de integração reais nesta task; os demais 8 casos já cobertos
-   por teste de handler (task 019) **não precisam ser duplicados** aqui — trocar cobertura unitária
-   por integração só onde o unitário não alcança (config declarativa de pipeline).
-5. Reexecutar toda a suíte (unitária + integração) e confirmar que o número total de testes só
-   cresce, sem quebrar nenhum dos 293 existentes.
+1. Projeto novo `tests/Api.IntegrationTests`, referenciando `Microsoft.AspNetCore.Mvc.Testing` +
+   só o `OdontoPlatform.Api.csproj` como `ProjectReference` (ele já referencia todos os módulos,
+   transitivo). `Program.cs` ganhou `public partial class Program {}` no fim — sem isso a classe
+   gerada pelos top-level statements é `internal`, invisível pro `WebApplicationFactory<Program>`
+   de outro assembly. Zero mudança de comportamento do host.
+2. **Banco de teste: InMemory** (decisão do Architect, não Postgres efêmero) — objetivo é
+   exercitar o pipeline (auth/policy/rate limit/routing), não fidelidade de SQL; Postgres efêmero
+   pediria infraestrutura de CI que o repo não tem, sem ganho pros 5 casos-alvo.
+   `ApiWebApplicationFactory` troca os 7 `DbContext` (1 por módulo) de `UseNpgsql` pra
+   `UseInMemoryDatabase`, 1 banco isolado por instância de factory (nome sufixado com
+   `Guid.NewGuid()`). Ambiente forçado `"Testing"` — pula o seed automático do admin padrão
+   (só roda em `"Development"`), cada teste constrói seu próprio dado via HTTP real.
+3. **Sem helper de JWT manual** — decisão tomada durante a implementação, melhor que o rascunho
+   original: os 4 endpoints públicos (`/api/auth/signup`, `/api/auth/login`,
+   `/api/organizations` `POST`, `/api/invites/{token}/accept`) já dão qualquer token/estado que os
+   5 casos precisam (inclusive "sem organization_id", que é exatamente o token que `/signup`
+   devolve). Reimplementar assinatura de JWT no teste seria menos fiel (testaria o teste, não a
+   API) e redundante. `AuthFlow.cs` só envelopa esses 4 endpoints como chamada HTTP normal.
+4. Os 5 casos da Origem viram 9 testes de integração reais (`TokenWithoutOrganizationTests`,
+   `SignupRateLimitTests`, `InviteFlowTests`) — os 8 já cobertos por teste de handler (task 019)
+   não foram duplicados.
+5. Suíte completa (unitária + integração) revalidada: **340 testes, 0 falha** — 322 unitários (9
+   projetos) + 9 de integração + 9 de `OdontoPlatform.Api.UnitTests`.
 
 ## Dependências
 
@@ -62,22 +71,35 @@ handler detecte, porque teste de handler nunca passa pelo pipeline de middleware
 
 | Etapa | Agente | Output |
 |-------|--------|--------|
-| 1. Objetivo | Product Owner | [pendente — puxar da fila de backlog] |
-| 2. Contexto | Reader → Writer | Gap descrito em `docs/tasks/019-qa-regressao-multi-org.md`, casos 5/9/11/12/13. |
-| 3. Quebra | Tech Lead | [pendente] |
-| 4. Estrutura | Architect | [pendente — decidir InMemory vs Postgres efêmero pra integração] |
-| 5. Aprovação | Product Owner | [pendente] |
-| 6. Implementação | Dev Backend | [pendente] |
-| 7. Teste | QA | [pendente] |
-| 8. Documentação | Writer | [pendente] |
+| 1. Objetivo | Product Owner | Puxada do backlog junto com a 020, a pedido do usuário — "corrigir bugs e melhorar o produto", 2026-08-19 |
+| 2. Contexto | Reader → Writer | Gap descrito em `docs/tasks/019-qa-regressao-multi-org.md`, casos 5/9/11/12/13; `AuthController`/`MeController`/`OrganizationsController`/`InvitesController`/`PatientsController` lidos pra mapear os 4 endpoints públicos usáveis nos testes |
+| 3. Quebra | Tech Lead | Escopo acima — bootstrap + os 5 casos, sem duplicar cobertura unitária existente |
+| 4. Estrutura | Architect | InMemory (não Postgres efêmero); `public partial class Program` no host; sem helper de JWT manual — usa os endpoints públicos reais |
+| 5. Aprovação | Product Owner | Aprovado |
+| 6. Implementação | Dev Backend | `tests/Api.IntegrationTests/` (`ApiWebApplicationFactory.cs`, `AuthFlow.cs`, `TokenWithoutOrganizationTests.cs`, `SignupRateLimitTests.cs`, `InviteFlowTests.cs`) + `Program.cs` (marcador) |
+| 7. Teste | QA | `dotnet test` em todos os 10 projetos — 340/340 verde |
+| 8. Documentação | Writer | `docs/knowledge/errors-aprendidos.md` (bug real achado DURANTE esta task, ver Notas) + `docs/decisions.md` |
 
 ## Status
 
-planned → in-progress → in-review (QA) → done
+planned → in-progress → in-review (QA) → **done**. 9 testes novos, todos verdes; suíte inteira
+(340 testes) revalidada sem regressão.
 
 ## Notas
 
 Criada pelo Writer (2026-08-18) a partir da recomendação explícita do QA no handoff da task 019:
 `"Recomendação: abrir task nova em sprint 7 pra bootstrap de suíte de integração end-to-end."`
-Sprint de destino em aberto — não é bloqueante pro fechamento da sprint 6, mas fica registrada
-como pendência de backlog visível.
+
+**Bug real achado DURANTE a implementação desta task (não é o objetivo da task, foi achado
+lateral):** `AuthFlow.cs` inicialmente usava `HttpContent.ReadFromJsonAsync<T>(customOptions)` com
+`JsonSerializerOptions` só com `Converters = { new JsonStringEnumConverter() }` — resultado: TODO
+campo string dos DTOs vinha `null` silenciosamente (sem exceção), 8 dos 9 testes falhavam com 401
+em cascata. Causa: `ReadFromJsonAsync<T>()` SEM options explícitas usa por baixo um default "web"
+implícito (camelCase + case-insensitive); passar `JsonSerializerOptions` custom substitui esse
+fallback por um `JsonSerializerOptions` "puro" (case-SENSITIVE, sem naming policy) — e a API
+serializa em `camelCase` (`"accessToken"`), então nenhuma propriedade batia contra os records em
+PascalCase. Fix: `PropertyNameCaseInsensitive = true` + `PropertyNamingPolicy =
+JsonNamingPolicy.CamelCase` junto do conversor de enum. Registrado em
+`docs/knowledge/errors-aprendidos.md` — é o tipo de bug que reaparece em qualquer client C#/teste
+HTTP que precise customizar `JsonSerializerOptions` além do que `ReadFromJsonAsync` já dá de
+graça.

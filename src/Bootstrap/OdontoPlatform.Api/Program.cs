@@ -231,3 +231,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Marcador pra `WebApplicationFactory<Program>` (task 021, tests/Api.IntegrationTests) conseguir
+// enxergar a classe `Program` gerada pelos top-level statements — sem isso ela é `internal` e
+// invisível de outro assembly. Não muda nenhum comportamento do host.
+public partial class Program { }

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scheduling.Domain\Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\Scheduling.Contracts\Scheduling.Contracts.csproj" />
+    <!-- Fronteira do módulo: Scheduling.Application referencia SÓ Patients.Contracts (nunca
+         Patients.Domain/Patients.Infrastructure) pra validar existência de paciente — ver
+         IPatientLookup e docs/decisions.md. -->
+    <ProjectReference Include="..\..\Patients\Patients.Contracts\Patients.Contracts.csproj" />
+    <!-- Fase 5: valida BranchId (hierarquia Organization→Branch→Recurso) via Tenancy.Contracts,
+         nunca Tenancy.Domain/Infrastructure — mesma fronteira de Patients.Contracts acima. -->
+    <ProjectReference Include="..\..\Tenancy\Tenancy.Contracts\Tenancy.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Contracts.Abstractions\Contracts.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Application.Common\Application.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

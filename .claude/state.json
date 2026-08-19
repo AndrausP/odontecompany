@@ -1,0 +1,78 @@
+{
+  "nirvana": "2.0.0",
+  "sync": {
+    "every": 1,
+    "sessionCount": 0,
+    "lastSync": null
+  },
+  "compact": {
+    "auto": true,
+    "threshold": 70
+  },
+  "preferences": {
+    "caveman": "full",
+    "language": "auto",
+    "chainVisibility": "hidden",
+    "entryBanner": true
+  },
+  "project": {
+    "type": "web-fullstack",
+    "stack": [".NET 8", "C# 12", "ASP.NET Core", "EF Core 8", "PostgreSQL 16", "Redis", "RabbitMQ", "React 18", "TypeScript"],
+    "docsPath": "docs/"
+  },
+  "graphify": {
+    "enabled": true,
+    "source": "docs/knowledge",
+    "outPath": "graphify-out/",
+    "owner": "writer",
+    "lastIndexed": "2026-08-17"
+  },
+  "agents": {
+    "productOwner": {
+      "active": true,
+      "model": "opus"
+    },
+    "techLead": {
+      "active": true,
+      "model": "opus"
+    },
+    "architect": {
+      "active": true,
+      "model": "sonnet",
+      "specialty": "C# / ASP.NET Core 8 / EF Core / PostgreSQL + React 18 / TypeScript / TailwindCSS"
+    },
+    "devBackend": {
+      "active": true,
+      "model": "sonnet",
+      "specialty": "C# / ASP.NET Core 8 / EF Core / PostgreSQL"
+    },
+    "devFrontend": {
+      "active": true,
+      "model": "sonnet",
+      "specialty": "React 18 / TypeScript / TailwindCSS"
+    },
+    "designer": {
+      "active": true,
+      "model": "sonnet"
+    },
+    "qa": {
+      "active": true,
+      "model": "sonnet",
+      "specialty": "NUnit / Moq / integration testing"
+    },
+    "reader": {
+      "active": true,
+      "model": "haiku"
+    },
+    "writer": {
+      "active": true,
+      "model": "sonnet"
+    }
+  },
+  "tasks": {
+    "bigtaskAutoGrill": true,
+    "smalltaskAutoExecute": true,
+    "tasksPath": "docs/tasks/",
+    "sprintsPath": "docs/sprints/"
+  }
+}

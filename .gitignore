@@ -1,0 +1,22 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Visual Studio
+.vs/
+*.suo
+
+# Frontend (frontend/ tem seu próprio .gitignore mais detalhado; isto é reforço na raiz)
+frontend/node_modules/
+frontend/dist/
+
+# Segredo local — senha real do Postgres dev fica só aqui, nunca sobe (ver appsettings.json,
+# que tem só placeholder CHANGE-ME). Cada dev cria a própria cópia a partir do .example.
+src/Bootstrap/OdontoPlatform.Api/appsettings.Development.json
+
+# graphify — índice gerado, regenerável via /graphify, não precisa versionar
+graphify-out/
+
+# Storage local de anexos (Records) — task 005, fallback de disco pra dev
+storage/

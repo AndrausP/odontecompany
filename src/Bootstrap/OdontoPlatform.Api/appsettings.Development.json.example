@@ -1,0 +1,17 @@
+{
+    "Logging": {
+        "LogLevel": {
+            "Default": "Information",
+            "Microsoft.AspNetCore": "Warning"
+        }
+    },
+    "ConnectionStrings": {
+        "IdentityDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "PatientsDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "SchedulingDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "RecordsDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "BillingDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "TenancyDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL",
+        "EstoqueDb": "Host=localhost;Port=5432;Database=odonto;Username=postgres;Password=SUA-SENHA-LOCAL"
+    }
+}

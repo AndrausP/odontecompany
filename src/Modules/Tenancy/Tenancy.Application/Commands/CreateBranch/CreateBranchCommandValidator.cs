@@ -8,5 +8,6 @@ public sealed class CreateBranchCommandValidator : AbstractValidator<CreateBranc
     {
         RuleFor(x => x.OrganizationId).NotEmpty();
         RuleFor(x => x.Nome).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Telefone).MaximumLength(20).When(x => x.Telefone is not null);
     }
 }

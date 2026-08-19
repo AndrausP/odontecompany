@@ -3,6 +3,7 @@ using Identity.Application.Queries.GetMe;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
 using Moq;
+using Subscriptions.Contracts;
 
 namespace Identity.UnitTests.Queries;
 
@@ -14,6 +15,7 @@ public class GetMeQueryHandlerTests
     private Mock<IOrganizationMembershipRepository> _membershipRepository;
     private Mock<IOrganizationRepository> _organizationRepository;
     private Mock<IInviteRepository> _inviteRepository;
+    private Mock<ISubscriptionLookup> _subscriptionLookup;
     private GetMeQueryHandler _handler;
 
     [SetUp]
@@ -23,8 +25,10 @@ public class GetMeQueryHandlerTests
         _membershipRepository = new Mock<IOrganizationMembershipRepository>();
         _organizationRepository = new Mock<IOrganizationRepository>();
         _inviteRepository = new Mock<IInviteRepository>();
+        // Sprint-11 — sem plano configurado no mock, default é null (mesmo "onboarding incompleto" que produção vê pra organization nova); testes de plano ficam em Subscriptions.
+        _subscriptionLookup = new Mock<ISubscriptionLookup>();
 
-        _handler = new GetMeQueryHandler(_userRepository.Object, _membershipRepository.Object, _organizationRepository.Object, _inviteRepository.Object);
+        _handler = new GetMeQueryHandler(_userRepository.Object, _membershipRepository.Object, _organizationRepository.Object, _inviteRepository.Object, _subscriptionLookup.Object);
 
         _inviteRepository.Setup(r => r.GetPendingByEmailAcrossOrganizationsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         // Default: nenhuma organization resolvida, salvo quando o teste sobrescreve explicitamente

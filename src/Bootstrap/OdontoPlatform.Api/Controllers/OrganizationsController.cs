@@ -44,7 +44,7 @@ public sealed class OrganizationsController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var command = new CreateOrganizationCommand(userId.Value, request.Nome);
+        var command = new CreateOrganizationCommand(userId.Value, request.Nome, request.Cnpj, request.Telefone, request.Endereco);
         var result = await _mediator.Send(command, ct);
 
         return result.IsSuccess
@@ -95,8 +95,8 @@ public sealed class OrganizationsController : ControllerBase
     }
 }
 
-/// <summary>Corpo da requisição de criação de organization.</summary>
-public sealed record CreateOrganizationRequest(string Nome);
+/// <summary>Corpo da requisição de criação de organization — Cnpj/Telefone/Endereco opcionais (sprint-11), configuráveis depois.</summary>
+public sealed record CreateOrganizationRequest(string Nome, string? Cnpj = null, string? Telefone = null, string? Endereco = null);
 
 /// <summary>Corpo da requisição de convite — organization nunca é informado aqui (vem da rota/token).</summary>
 public sealed record CreateInviteRequest(string Email, Role Role);

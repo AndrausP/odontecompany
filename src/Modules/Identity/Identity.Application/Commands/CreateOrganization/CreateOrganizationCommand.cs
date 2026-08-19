@@ -9,4 +9,5 @@ namespace Identity.Application.Commands.CreateOrganization;
 /// usuário autenticado. Este endpoint TOLERA token sem organization (task 015, item 015): é
 /// justamente a rota que dá a primeira organization a quem ainda não tem nenhuma.
 /// </summary>
-public sealed record CreateOrganizationCommand(Guid UserId, string Nome) : IRequest<Result<CreateOrganizationResultDto>>;
+public sealed record CreateOrganizationCommand(Guid UserId, string Nome, string? Cnpj = null, string? Telefone = null, string? Endereco = null)
+    : IRequest<Result<CreateOrganizationResultDto>>;

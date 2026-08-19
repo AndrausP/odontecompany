@@ -17,19 +17,22 @@ public class Branch : AggregateRoot, IMustHaveOrganization
     public Guid OrganizationId { get; private set; }
     public string Nome { get; private set; } = string.Empty;
     public string? Endereco { get; private set; }
+    // Opcional (sprint-11) — "configurar depois", mesma lógica de Organization.Cnpj/Telefone.
+    public string? Telefone { get; private set; }
     public bool Ativo { get; private set; } = true;
 
     private Branch() { } // EF Core
 
-    private Branch(Guid organizationId, string nome, string? endereco)
+    private Branch(Guid organizationId, string nome, string? endereco, string? telefone)
     {
         OrganizationId = organizationId;
         Nome = nome;
         Endereco = endereco;
+        Telefone = telefone;
         Ativo = true;
     }
 
-    public static Result<Branch> Create(Guid organizationId, string nome, string? endereco)
+    public static Result<Branch> Create(Guid organizationId, string nome, string? endereco, string? telefone = null)
     {
         if (organizationId == Guid.Empty)
             return Result.Failure<Branch>(DomainErrors.Branch.OrganizationInvalido);
@@ -37,7 +40,11 @@ public class Branch : AggregateRoot, IMustHaveOrganization
         if (string.IsNullOrWhiteSpace(nome))
             return Result.Failure<Branch>(DomainErrors.Branch.NomeObrigatorio);
 
-        return Result.Success(new Branch(organizationId, nome.Trim(), string.IsNullOrWhiteSpace(endereco) ? null : endereco.Trim()));
+        return Result.Success(new Branch(
+            organizationId,
+            nome.Trim(),
+            string.IsNullOrWhiteSpace(endereco) ? null : endereco.Trim(),
+            string.IsNullOrWhiteSpace(telefone) ? null : telefone.Trim()));
     }
 
     public void Desativar()

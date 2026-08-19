@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Tenancy.Domain\Tenancy.Domain.csproj" />
     <ProjectReference Include="..\Tenancy.Contracts\Tenancy.Contracts.csproj" />
+    <!-- Sprint-11: limite de filial por plano — só Subscriptions.Contracts (ISubscriptionLookup), mesma fronteira de todo lookup cross-module. -->
+    <ProjectReference Include="..\..\Subscriptions\Subscriptions.Contracts\Subscriptions.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Application.Common\Application.Common.csproj" />
   </ItemGroup>
 

@@ -4,6 +4,7 @@ using Identity.Application.Interfaces;
 using Identity.Domain.Errors;
 using MediatR;
 using SharedKernel;
+using Subscriptions.Contracts;
 
 namespace Identity.Application.Queries.GetMe;
 
@@ -21,17 +22,20 @@ public sealed class GetMeQueryHandler : IRequestHandler<GetMeQuery, Result<MeRes
     private readonly IOrganizationMembershipRepository _membershipRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IInviteRepository _inviteRepository;
+    private readonly ISubscriptionLookup _subscriptionLookup;
 
     public GetMeQueryHandler(
         IUserRepository userRepository,
         IOrganizationMembershipRepository membershipRepository,
         IOrganizationRepository organizationRepository,
-        IInviteRepository inviteRepository)
+        IInviteRepository inviteRepository,
+        ISubscriptionLookup subscriptionLookup)
     {
         _userRepository = userRepository;
         _membershipRepository = membershipRepository;
         _organizationRepository = organizationRepository;
         _inviteRepository = inviteRepository;
+        _subscriptionLookup = subscriptionLookup;
     }
 
     public async Task<Result<MeResultDto>> Handle(GetMeQuery request, CancellationToken cancellationToken)
@@ -59,6 +63,12 @@ public sealed class GetMeQueryHandler : IRequestHandler<GetMeQuery, Result<MeRes
 
         var userDto = new UserDto(user.Id, user.Nome, user.Email, user.Ativo, user.OnboardingSkipped);
 
-        return Result.Success(new MeResultDto(userDto, organizationDtos, request.ActiveOrganizationId, pendingInvites));
+        // Só resolve o plano da organização ATIVA (a do token) — não de toda membership; é o que
+        // o gate do frontend (RequireOrganization) precisa, sem N chamadas por organization.
+        var activePlanTier = request.ActiveOrganizationId is { } activeOrgId
+            ? (await _subscriptionLookup.ObterAtivaAsync(activeOrgId, cancellationToken))?.Tier
+            : null;
+
+        return Result.Success(new MeResultDto(userDto, organizationDtos, request.ActiveOrganizationId, activePlanTier, pendingInvites));
     }
 }

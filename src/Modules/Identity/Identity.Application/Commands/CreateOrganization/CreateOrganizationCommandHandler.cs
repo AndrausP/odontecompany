@@ -55,7 +55,7 @@ public sealed class CreateOrganizationCommandHandler : IRequestHandler<CreateOrg
         if (user is null || !user.Ativo)
             return Result.Failure<CreateOrganizationResultDto>(DomainErrors.User.UsuarioInativo);
 
-        var organizationResult = Organization.Create(request.Nome);
+        var organizationResult = Organization.Create(request.Nome, request.Cnpj, request.Telefone, request.Endereco);
         if (organizationResult.IsFailure)
             return Result.Failure<CreateOrganizationResultDto>(organizationResult.Error);
 

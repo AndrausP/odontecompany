@@ -33,7 +33,7 @@ public sealed class BranchesController : ControllerBase
         if (organizationId is null)
             return Unauthorized(new { error = "Organization não resolvido a partir do token." });
 
-        var result = await _mediator.Send(new CreateBranchCommand(organizationId.Value, request.Nome, request.Endereco), ct);
+        var result = await _mediator.Send(new CreateBranchCommand(organizationId.Value, request.Nome, request.Endereco, request.Telefone), ct);
 
         return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error.Message });
     }
@@ -57,4 +57,4 @@ public sealed class BranchesController : ControllerBase
     }
 }
 
-public sealed record CreateBranchRequest(string Nome, string? Endereco);
+public sealed record CreateBranchRequest(string Nome, string? Endereco, string? Telefone = null);

@@ -5,6 +5,8 @@
     <!-- Fase 5: valida BranchId (hierarquia Organization→Branch→Recurso) via Tenancy.Contracts,
          nunca Tenancy.Domain/Infrastructure — mesma fronteira usada por Scheduling. -->
     <ProjectReference Include="..\..\Tenancy\Tenancy.Contracts\Tenancy.Contracts.csproj" />
+    <!-- Sprint-11: GetMe expõe se a organização ativa tem plano — só Subscriptions.Contracts (ISubscriptionLookup). -->
+    <ProjectReference Include="..\..\Subscriptions\Subscriptions.Contracts\Subscriptions.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Application.Common\Application.Common.csproj" />
   </ItemGroup>
 

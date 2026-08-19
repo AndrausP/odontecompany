@@ -11,5 +11,8 @@ public static class DomainErrors
         public static readonly Error NaoEncontrada = new("Branch.NaoEncontrada", "Branch não encontrada.");
         public static readonly Error Inativa = new("Branch.Inativa", "Branch está inativa.");
         public static readonly Error NomeJaCadastrado = new("Branch.NomeJaCadastrado", "Já existe branch com este nome neste organization.");
+        public static readonly Error LimiteDoPlanoAtingido = new(
+            "Branch.LimiteDoPlanoAtingido",
+            "O plano atual não permite criar mais unidades. Faça upgrade pra continuar.");
     }
 }

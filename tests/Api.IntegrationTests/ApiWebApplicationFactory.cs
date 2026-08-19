@@ -10,13 +10,14 @@ using Microsoft.Extensions.Logging;
 using Patients.Infrastructure.Persistence;
 using Records.Infrastructure.Persistence;
 using Scheduling.Infrastructure.Persistence;
+using Subscriptions.Infrastructure.Persistence;
 using Tenancy.Infrastructure.Persistence;
 
 namespace Api.IntegrationTests;
 
 /// <summary>
 /// Task 021 — sobe <c>OdontoPlatform.Api</c> inteira in-process (<see cref="WebApplicationFactory{TEntryPoint}"/>),
-/// com os 7 <c>DbContext</c> (um por módulo) trocados de Postgres real pra
+/// com os 8 <c>DbContext</c> (um por módulo — Subscriptions somado na sprint-11) trocados de Postgres real pra
 /// <c>Microsoft.EntityFrameworkCore.InMemory</c>. Decisão do Architect (docs/tasks/021, docs/decisions.md):
 /// InMemory, não Postgres efêmero — o objetivo aqui é exercitar o PIPELINE (auth, policies, rate
 /// limiting, routing), não fidelidade de SQL/constraints; Postgres efêmero exigiria infraestrutura
@@ -54,6 +55,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
             ReplaceWithInMemory<BillingDbContext>(services, nameof(BillingDbContext));
             ReplaceWithInMemory<TenancyDbContext>(services, nameof(TenancyDbContext));
             ReplaceWithInMemory<EstoqueDbContext>(services, nameof(EstoqueDbContext));
+            ReplaceWithInMemory<SubscriptionsDbContext>(services, nameof(SubscriptionsDbContext));
         });
     }
 

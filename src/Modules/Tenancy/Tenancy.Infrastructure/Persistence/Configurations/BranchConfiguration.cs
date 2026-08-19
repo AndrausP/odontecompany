@@ -14,6 +14,7 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.Property(u => u.OrganizationId).IsRequired();
         builder.Property(u => u.Nome).IsRequired().HasMaxLength(200);
         builder.Property(u => u.Endereco).HasMaxLength(500);
+        builder.Property(u => u.Telefone).HasMaxLength(20);
         builder.Property(u => u.Ativo).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
 

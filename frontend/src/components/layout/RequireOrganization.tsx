@@ -8,11 +8,15 @@ interface RequireOrganizationProps {
 }
 
 /**
- * Gate pós-login (task 018): só deixa passar pra dentro do AppLayout quem já tem organization
- * ativa. Usuário recém-criado via signup (ou que perdeu a única organization) cai em /onboarding
- * — criar organização ou aceitar convite pendente. Mantém auth-store.organizations/
+ * Gate pós-login (task 018, +skip sprint-11): só deixa passar pra dentro do AppLayout quem já
+ * tem organization ativa OU já escolheu "por enquanto não" no onboarding
+ * (`user.onboardingSkipped`, persistido no backend — task 018 original não previa esse caso).
+ * Usuário recém-criado via signup, sem organization e sem ter pulado ainda, cai em /onboarding —
+ * criar organização ou aceitar convite pendente. Mantém auth-store.organizations/
  * activeOrganizationId sincronizado com o snapshot de /api/me a cada resposta nova — é a fonte
- * usada pelo seletor de organization no AppLayout.
+ * usada pelo seletor de organization no AppLayout. Quem entrou sem organization (pulou) ainda
+ * passa por aqui pra dentro do AppLayout — é o próprio AppLayout que decide mostrar o dashboard
+ * vazio com banner em vez do <Outlet/> normal (ver AppLayout.tsx).
  */
 export function RequireOrganization({ children }: RequireOrganizationProps) {
   const { data, isLoading, isError } = useMe()
@@ -36,7 +40,7 @@ export function RequireOrganization({ children }: RequireOrganizationProps) {
     return null
   }
 
-  if (data.organizations.length === 0) {
+  if (data.organizations.length === 0 && !data.user.onboardingSkipped) {
     return <Navigate to="/onboarding" replace />
   }
 

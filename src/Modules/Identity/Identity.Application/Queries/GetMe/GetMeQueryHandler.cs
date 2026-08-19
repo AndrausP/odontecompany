@@ -57,7 +57,7 @@ public sealed class GetMeQueryHandler : IRequestHandler<GetMeQuery, Result<MeRes
 
         var pendingInvites = await InvitePendingResolver.ResolvePendingInvitesAsync(user.Email, _inviteRepository, _organizationRepository, cancellationToken);
 
-        var userDto = new UserDto(user.Id, user.Nome, user.Email, user.Ativo);
+        var userDto = new UserDto(user.Id, user.Nome, user.Email, user.Ativo, user.OnboardingSkipped);
 
         return Result.Success(new MeResultDto(userDto, organizationDtos, request.ActiveOrganizationId, pendingInvites));
     }

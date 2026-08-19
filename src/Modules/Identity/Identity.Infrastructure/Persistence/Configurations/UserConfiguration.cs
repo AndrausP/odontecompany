@@ -15,6 +15,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.Ativo).IsRequired();
+        builder.Property(u => u.OnboardingSkipped).IsRequired().HasDefaultValue(false);
         builder.Property(u => u.CreatedAt).IsRequired();
 
         // Email globalmente único — é o que permite ao login achar o usuário sem o cliente

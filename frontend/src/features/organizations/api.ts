@@ -11,3 +11,21 @@ export async function createOrganization(nome: string): Promise<CreateOrganizati
   const { data } = await apiClient.post<CreateOrganizationResult>('/api/organizations', { Nome: nome })
   return data
 }
+
+/**
+ * POST /api/branches (BranchesController, task 030) — segundo passo do onboarding guiado
+ * (sprint-11): depois de criar a organization, cria a primeira filial/unidade dentro dela. Exige
+ * RequireActiveOrganization no backend — só chamar depois do token trocado pelo de createOrganization.
+ */
+export async function createBranch(nome: string, endereco?: string): Promise<void> {
+  await apiClient.post('/api/branches', { Nome: nome, Endereco: endereco || undefined })
+}
+
+/**
+ * POST /api/me/skip-onboarding (sprint-11) — usuário sem organization escolheu "por enquanto
+ * não". Persiste no backend (User.OnboardingSkipped) pra RequireOrganization parar de forçar
+ * /onboarding em qualquer sessão/device futuro.
+ */
+export async function skipOnboarding(): Promise<void> {
+  await apiClient.post('/api/me/skip-onboarding')
+}

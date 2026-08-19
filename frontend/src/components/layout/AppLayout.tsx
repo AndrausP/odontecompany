@@ -2,6 +2,7 @@ import { useState, type ComponentType } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
+  Building2,
   Calendar,
   LogOut,
   Mail,
@@ -80,6 +81,39 @@ const THEME_LABELS: Record<Theme, string> = {
 
 const focusRing =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+
+/**
+ * Substitui o <Outlet/> quando o usuário entrou sem organization (pulou o onboarding — sprint-11,
+ * RequireOrganization deixa passar mesmo assim). Nenhuma página real renderiza: todas dependem de
+ * organizationId vindo do JWT, que não existe nesse estado, e sairiam batendo 401 à toa. Nav/tema/
+ * logout continuam funcionando ao redor — só o conteúdo principal vira este convite pra criar a
+ * empresa quando o usuário decidir.
+ */
+function EmptyOrganizationState() {
+  return (
+    <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+      <div className="flex size-14 items-center justify-center rounded-full bg-brand-subtle text-brand">
+        <Building2 size={28} />
+      </div>
+      <div className="space-y-1">
+        <h1 className="text-lg font-semibold text-ink">Crie sua empresa pra começar</h1>
+        <p className="max-w-sm text-sm text-ink-muted">
+          Agenda, pacientes, financeiro e estoque só ficam disponíveis depois que sua empresa e sua
+          primeira unidade existirem.
+        </p>
+      </div>
+      <NavLink
+        to="/onboarding"
+        className={cn(
+          'rounded-md bg-brand px-4 py-2 text-sm font-medium text-on-brand transition-colors hover:bg-brand-hover',
+          focusRing,
+        )}
+      >
+        Criar empresa
+      </NavLink>
+    </div>
+  )
+}
 
 /** Toggle de tema no rodapé (spec 024 §7.6). Colapsado: botão único cíclico (a spec permite
  * segmented control OU botão cíclico — aqui a escolha muda com o espaço disponível). */
@@ -286,6 +320,10 @@ export function AppLayout() {
     .map((group) => ({ ...group, items: group.items.filter(isItemVisible) }))
     .filter((group) => group.items.length > 0)
   const pendingInvitesCount = me?.pendingInvites.length ?? 0
+  // Pulou o onboarding (sprint-11) — sem organization, nenhuma página de gestão tem o que buscar
+  // (organizationId vem do JWT, que não existe nesse estado). `me` só fica undefined durante o
+  // primeiro load (RequireOrganization já bloqueia até ter dado — nunca renderiza aqui vazio).
+  const hasNoOrganization = me ? me.organizations.length === 0 : false
 
   const handleLogout = () => {
     clearSession()
@@ -369,9 +407,7 @@ export function AppLayout() {
         <SidebarFooter collapsed={collapsed} role={claims?.role} onLogout={handleLogout} />
       </aside>
 
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
-      </main>
+      <main className="flex-1 overflow-auto p-6">{hasNoOrganization ? <EmptyOrganizationState /> : <Outlet />}</main>
     </div>
   )
 }

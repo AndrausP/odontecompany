@@ -19,6 +19,15 @@ public class User : AggregateRoot
     public string PasswordHash { get; private set; } = string.Empty;
     public bool Ativo { get; private set; } = true;
 
+    /// <summary>
+    /// Usuário sem organization escolheu "por enquanto não" no onboarding (sprint-11) — flag
+    /// persistida pra RequireOrganization (frontend) não voltar a empurrar pro /onboarding em
+    /// outro device/sessão. Nunca volta a false sozinha: assim que o usuário cria/entra numa
+    /// organization, `organizations.length > 0` já basta pro gate deixar passar — não precisa
+    /// resetar a flag.
+    /// </summary>
+    public bool OnboardingSkipped { get; private set; }
+
     private User() { } // EF Core
 
     private User(string nome, string email, string passwordHash)
@@ -52,6 +61,12 @@ public class User : AggregateRoot
     public void Desativar()
     {
         Ativo = false;
+        SetUpdatedAt();
+    }
+
+    public void PularOnboarding()
+    {
+        OnboardingSkipped = true;
         SetUpdatedAt();
     }
 }

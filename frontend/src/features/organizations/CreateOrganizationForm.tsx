@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -17,15 +16,21 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+interface CreateOrganizationFormProps {
+  /** Chamado depois da organization criada + sessão trocada — quem chama decide o próximo passo
+   * (sprint-11: OnboardingPage avança pro passo 2, criar a primeira filial, em vez de navegar
+   * direto pro app). */
+  onCreated: () => void
+}
+
 /**
  * Cria a organization e já entra nela — createOrganization devolve token novo escopado, diferente
  * do fluxo de aceitar convite (que precisa de um switch-organization separado). Limpa o cache do
- * React Query antes de navegar por hábito: aqui é sempre a primeira organization do usuário, mas
+ * React Query antes de avançar por hábito: aqui é sempre a primeira organization do usuário, mas
  * este componente pode ser reusado (multi-org) no futuro e o cache velho seria o mesmo bug do
  * seletor de organization.
  */
-export function CreateOrganizationForm() {
-  const navigate = useNavigate()
+export function CreateOrganizationForm({ onCreated }: CreateOrganizationFormProps) {
   const queryClient = useQueryClient()
   const setSession = useAuthStore((s) => s.setSession)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -41,7 +46,7 @@ export function CreateOrganizationForm() {
     onSuccess: (result) => {
       setSession({ accessToken: result.accessToken, refreshToken: result.refreshToken })
       queryClient.clear()
-      navigate('/agenda', { replace: true })
+      onCreated()
     },
     onError: (error) => setServerError(getApiErrorMessage(error)),
   })

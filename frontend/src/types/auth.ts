@@ -48,12 +48,13 @@ export interface CreateOrganizationResult {
   expiresIn: number
 }
 
-/** Espelha Identity.Application.DTOs.UserDto (task 018). */
+/** Espelha Identity.Application.DTOs.UserDto (task 018, +onboardingSkipped sprint-11). */
 export interface UserProfile {
   id: string
   nome: string
   email: string
   ativo: boolean
+  onboardingSkipped: boolean
 }
 
 /** Espelha Identity.Application.DTOs.OrganizationMembershipDto (task 018) — uma organization a que o usuário pertence, com o papel dessa afiliação. */

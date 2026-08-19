@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMe } from '../auth/useMe'
@@ -10,26 +10,45 @@ import { Card, CardBody, CardHeader, CardTitle } from '../../components/ui/Card'
 import { InvitesList } from '../invites/InvitesList'
 import { CreateOrganizationForm } from './CreateOrganizationForm'
 import { CreateBranchForm } from './CreateBranchForm'
+import { SelectPlanStep } from '../subscriptions/SelectPlanStep'
+
+type Step = 'organizacao' | 'plano' | 'unidade'
 
 /**
  * Gate pós-signup (task 018) — chegada garantida pelo RequireOrganization (App.tsx) sempre que
- * GET /api/me devolve organizations: []. Convite pendente tem prioridade visual sobre "criar
- * organização", mas criar org continua disponível mesmo com convite na tela — usuário pode
- * preferir ter a própria organization em vez de entrar como membro de outra.
+ * GET /api/me indica organization ausente OU sem plano ativo. Convite pendente tem prioridade
+ * visual sobre "criar organização", mas criar org continua disponível mesmo com convite na tela —
+ * usuário pode preferir ter a própria organization em vez de entrar como membro de outra.
  *
- * Fluxo guiado (sprint-11): empresa (organization) → primeira unidade (branch) → app. `step`
- * só existe localmente (não precisa sobreviver a reload — se recarregar no meio, `data.organizations`
- * já tem 1 item e o guard abaixo redireciona pra /agenda direto, sem travar o usuário sem unidade
- * nenhuma; criar mais unidades depois fica fora do onboarding). "Por enquanto não" pula os dois
- * passos e persiste no backend (User.OnboardingSkipped) — RequireOrganization deixa entrar mesmo
- * sem organization depois disso.
+ * Fluxo guiado (sprint-11): empresa (organization) → plano → primeira unidade (branch) → app.
+ * "Por enquanto não" só existe no passo 1 e pula os 3, persistindo no backend
+ * (`User.OnboardingSkipped`) — a partir do passo 2 não tem mais como pular (a regra de negócio é
+ * bloquear quem não tem plano; se chegou a criar a organização, plano é obrigatório).
+ *
+ * `step` é local (não sobrevive a reload). Se recarregar no meio: `data.organizations.length > 0`
+ * já basta pra pular direto pro passo `plano` (nunca de volta pro 1, criar organization de novo
+ * seria errado); se a organization JÁ tinha plano e branches antes desta sprint existir (org
+ * antiga, recadastrando plano agora), depois de escolher o plano vai direto pro app, sem forçar
+ * criar outra unidade (`hadOrganizationOnArrival` decide isso — travado num ref na PRIMEIRA vez
+ * que `data` carrega, nunca recalculado: criar a organization no passo 1 muda `data.organizations`
+ * no mesmo `useMe()` cache, e se isso fosse recalculado a cada render o fluxo "acabei de criar"
+ * ficaria indistinguível de "já tinha organization" assim que o passo 1 termina — bug real pego
+ * testando ao vivo, ver docs/knowledge/errors-aprendidos.md).
  */
 export function OnboardingPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setSession = useAuthStore((s) => s.setSession)
   const { data, isLoading } = useMe()
-  const [step, setStep] = useState<'organizacao' | 'unidade'>('organizacao')
+
+  const hadOrganizationOnArrivalRef = useRef<boolean | null>(null)
+  if (!isLoading && data && hadOrganizationOnArrivalRef.current === null) {
+    hadOrganizationOnArrivalRef.current = data.organizations.length > 0
+  }
+  const hadOrganizationOnArrival = hadOrganizationOnArrivalRef.current ?? false
+
+  const [step, setStep] = useState<Step | null>(null)
+  const effectiveStep: Step = step ?? (hadOrganizationOnArrival ? 'plano' : 'organizacao')
 
   const skipMutation = useMutation({
     mutationFn: skipOnboarding,
@@ -59,17 +78,54 @@ export function OnboardingPage() {
     )
   }
 
-  // Usuário já tem organization (voltou pra essa URL de propósito, ou aceitou convite em outra
-  // aba) — não faz sentido ficar preso no onboarding. Só vale no passo 1: no passo 2 (`unidade`)
-  // `data.organizations` JÁ tem a organization recém-criada por este mesmo fluxo — não é "voltou
-  // com organization pronta", é o meio do caminho, criar a unidade ainda falta.
-  if (step === 'organizacao' && data && data.organizations.length > 0) {
+  // Já tem organization E plano ativo — não faz sentido ficar preso no onboarding (voltou pra
+  // essa URL de propósito, ou reload no fim do fluxo). SÓ dispara com `step === null` (nenhuma
+  // interação nesta sessão ainda) — uma vez que `step` foi setado explicitamente (usuário avançou
+  // pro passo 'plano'/'unidade' NESTA visita), esse guard nunca mais interfere: senão, assim que
+  // o plano é selecionado, `data` já reflete org+plano prontos e este `if` navegava pra /agenda
+  // ANTES do passo 'unidade' ter chance de renderizar — pulava a criação da 1ª unidade por
+  // completo pra quem chegou sem organization nenhuma (bug real pego testando ao vivo, ver
+  // docs/knowledge/errors-aprendidos.md).
+  if (step === null && data && data.organizations.length > 0 && data.activePlanTier) {
     return <Navigate to="/agenda" replace />
   }
 
   const pendingInvites = data?.pendingInvites ?? []
 
-  if (step === 'unidade') {
+  if (effectiveStep === 'plano') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface px-4 py-10">
+        <div className="w-full max-w-lg space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Escolha um plano</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <p className="mb-4 text-sm text-ink-muted">
+                Sem cobrança nesta etapa — o plano define quantas unidades sua empresa pode ter.
+              </p>
+              <SelectPlanStep
+                onSelected={async () => {
+                  // RequireOrganization lê `activePlanTier` do MESMO cache ['me'] — sem invalidar
+                  // aqui, o `navigate` abaixo bate num cache stale (ainda `activePlanTier: null`)
+                  // e o gate manda de volta pro /onboarding na hora (bug real pego testando ao
+                  // vivo — parecia que escolher plano "não fazia nada").
+                  await queryClient.invalidateQueries({ queryKey: ['me'] })
+                  if (hadOrganizationOnArrival) {
+                    navigate('/agenda', { replace: true })
+                  } else {
+                    setStep('unidade')
+                  }
+                }}
+              />
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (effectiveStep === 'unidade') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface px-4 py-10">
         <div className="w-full max-w-md space-y-4">
@@ -79,8 +135,8 @@ export function OnboardingPage() {
             </CardHeader>
             <CardBody>
               <p className="mb-4 text-sm text-ink-muted">
-                Empresa criada. Agora cadastre a unidade/clínica onde você atende — dá pra criar outras
-                depois, todas dentro da mesma empresa.
+                Empresa e plano prontos. Agora cadastre a unidade/clínica onde você atende — dá pra
+                criar outras depois, todas dentro da mesma empresa.
               </p>
               <CreateBranchForm onCreated={() => navigate('/agenda', { replace: true })} />
             </CardBody>
@@ -116,7 +172,7 @@ export function OnboardingPage() {
             <CardTitle>{pendingInvites.length > 0 ? 'Ou crie sua própria empresa' : 'Criar empresa'}</CardTitle>
           </CardHeader>
           <CardBody className="space-y-4">
-            <CreateOrganizationForm onCreated={() => setStep('unidade')} />
+            <CreateOrganizationForm onCreated={() => setStep('plano')} />
             <div className="flex items-center justify-center border-t border-border pt-4">
               <button
                 type="button"

@@ -12,6 +12,7 @@ import { Label } from '../../components/ui/Label'
 const schema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório').max(150, 'Nome não pode ter mais de 150 caracteres'),
   endereco: z.string().optional(),
+  telefone: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -21,10 +22,13 @@ interface CreateBranchFormProps {
 }
 
 /**
- * Passo 2 do onboarding guiado (sprint-11) — depois da organization (a empresa), a primeira
- * filial/unidade dela (endereço, cidade — sede ou não não importa pro backend hoje, é só mais uma
- * Branch: BranchesController/CreateBranchCommand não distingue sede de filial secundária).
- * Organization pode ter N branches depois, criadas fora do onboarding (fora de escopo aqui).
+ * Passo 3 do onboarding guiado (sprint-11, depois de escolher o plano) — a primeira filial/
+ * unidade da organization (endereço/telefone opcionais — sede ou não não importa pro backend
+ * hoje, é só mais uma Branch: BranchesController/CreateBranchCommand não distingue sede de filial
+ * secundária). Pode 400 com `Branch.LimiteDoPlanoAtingido` se o plano escolhido não permitir mais
+ * unidades — não deveria acontecer aqui (organization recém-criada, 0 branches), mas o erro do
+ * backend já vem com mensagem pronta pro usuário. Organization pode ter N branches depois,
+ * criadas fora do onboarding (fora de escopo aqui).
  */
 export function CreateBranchForm({ onCreated }: CreateBranchFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -36,7 +40,7 @@ export function CreateBranchForm({ onCreated }: CreateBranchFormProps) {
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
   const mutation = useMutation({
-    mutationFn: (values: FormValues) => createBranch(values.nome, values.endereco),
+    mutationFn: (values: FormValues) => createBranch(values),
     onSuccess: () => onCreated(),
     onError: (error) => setServerError(getApiErrorMessage(error)),
   })
@@ -61,6 +65,11 @@ export function CreateBranchForm({ onCreated }: CreateBranchFormProps) {
       <div>
         <Label htmlFor="enderecoFilial">Endereço (opcional)</Label>
         <Input id="enderecoFilial" placeholder="Rua, número, cidade" {...register('endereco')} />
+      </div>
+
+      <div>
+        <Label htmlFor="telefoneFilial">Telefone (opcional)</Label>
+        <Input id="telefoneFilial" placeholder="11999999999" {...register('telefone')} />
       </div>
 
       {serverError && <p className="text-sm text-danger">{serverError}</p>}

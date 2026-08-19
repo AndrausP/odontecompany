@@ -75,11 +75,12 @@ export interface PendingInvite {
   expiresAt: string
 }
 
-/** Espelha Identity.Application.DTOs.MeResultDto (task 018). */
+/** Espelha Identity.Application.DTOs.MeResultDto (task 018, +activePlanTier sprint-11). `activePlanTier` é null sem organization ativa OU organization sem plano escolhido ainda (onboarding incompleto). */
 export interface MeResult {
   user: UserProfile
   organizations: OrganizationMembership[]
   activeOrganizationId: string | null
+  activePlanTier: string | null
   pendingInvites: PendingInvite[]
 }
 

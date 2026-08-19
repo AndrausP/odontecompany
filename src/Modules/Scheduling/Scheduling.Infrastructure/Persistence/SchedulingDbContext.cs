@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Scheduling.Application.Exceptions;
@@ -28,6 +29,12 @@ public sealed class SchedulingDbContext : DbContext, IOrganizationAwareDbContext
     public DbSet<Profissional> Profissionais => Set<Profissional>();
     public DbSet<Sala> Salas => Set<Sala>();
     public DbSet<SchedulingOutboxMessage> OutboxMessages => Set<SchedulingOutboxMessage>();
+
+    // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — ver nota em
+    // PatientsDbContext / Infrastructure.Common.Persistence (achado validando endpoints, sprint-11).
+    // Módulo mais exposto a isso: DataHoraInicio/Fim do Agendamento vêm direto do body do POST.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.ApplyUtcDateTimeConversion();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -2,6 +2,17 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* `color-scheme` nunca foi declarado — browser sempre assumia esquema claro pros controles
+   nativos (date/time picker, scrollbar), então o ícone do calendário (SVG escuro-sobre-claro do
+   próprio Chrome) ficava invisível em cima do fundo escuro do tema dark. Declarar por modo resolve
+   sem precisar de filter/invert hack em cima do ícone nativo. */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
 @theme {
   /* Superfícies e bordas — valores LIGHT (default) */
   --color-surface: #F7FAF8;

@@ -1,3 +1,4 @@
+using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -25,6 +26,12 @@ public sealed class PatientsDbContext : DbContext, IOrganizationAwareDbContext, 
     public Guid? CurrentOrganizationId => _organizationContext.OrganizationId;
 
     public DbSet<Patient> Patients => Set<Patient>();
+
+    // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — DataNascimento chega do
+    // model binding (JSON) com Kind=Unspecified e derrubava o SaveChanges (achado validando os
+    // endpoints, sprint-11). Convenção compartilhada — ver Infrastructure.Common.Persistence.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.ApplyUtcDateTimeConversion();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

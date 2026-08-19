@@ -1,6 +1,7 @@
 using Estoque.Application.Exceptions;
 using Estoque.Application.Interfaces;
 using Estoque.Domain.Entities;
+using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -19,6 +20,11 @@ public sealed class EstoqueDbContext : DbContext, IOrganizationAwareDbContext, I
     public Guid? CurrentOrganizationId => _organizationContext.OrganizationId;
 
     public DbSet<ItemEstoque> ItensEstoque => Set<ItemEstoque>();
+
+    // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — ver nota em
+    // PatientsDbContext / Infrastructure.Common.Persistence (achado validando endpoints, sprint-11).
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.ApplyUtcDateTimeConversion();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

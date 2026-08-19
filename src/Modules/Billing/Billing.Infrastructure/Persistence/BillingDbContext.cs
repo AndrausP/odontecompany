@@ -1,6 +1,7 @@
 using Billing.Application.Exceptions;
 using Billing.Application.Interfaces;
 using Billing.Domain.Entities;
+using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -21,6 +22,11 @@ public sealed class BillingDbContext : DbContext, IOrganizationAwareDbContext, I
     public DbSet<Fatura> Faturas => Set<Fatura>();
     public DbSet<Parcela> Parcelas => Set<Parcela>();
     public DbSet<Convenio> Convenios => Set<Convenio>();
+
+    // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — ver nota em
+    // PatientsDbContext / Infrastructure.Common.Persistence (achado validando endpoints, sprint-11).
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.ApplyUtcDateTimeConversion();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

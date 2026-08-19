@@ -121,6 +121,28 @@
   decisão do PO em docs/sprints/sprint-7.md, implementada nas tasks
   docs/tasks/022-contratos-leitura-comissao.md e docs/tasks/023-query-comissoes-endpoint-rbac.md.
 
+- [2026-08-19] Hierarquia de tenancy pra onboarding é a que já existe — Organization = empresa (1
+  por conta, dados legais/nome), Branch = cada unidade/filial dela (nome, endereço) — **sem**
+  camada nova ("franquia"/"filiado" são só como o usuário se refere a Branch em linguagem
+  informal, não conceitos de domínio novos). Organization pode ter N branches, todas acessíveis a
+  partir da mesma conta — fonte: grill-me do usuário, task docs/tasks/037-onboarding-guiado-org-filial.md.
+- [2026-08-19] Onboarding pós-login é guiado em 2 passos obrigatórios pra quem escolhe criar:
+  Organization (empresa) → primeira Branch (unidade) → só depois cai na tela de gestão
+  (Agenda/Pacientes/etc). Criar mais Branches depois fica fora do onboarding (fluxo normal do
+  app) — fonte: task docs/tasks/037-onboarding-guiado-org-filial.md.
+- [2026-08-19] Usuário pode pular a criação de empresa no onboarding ("por enquanto não") — escolha
+  persistida no backend (`User.OnboardingSkipped`), não expira, não é por sessão/device. Sem
+  organization + já pulou = app abre normalmente (nav/tema/logout funcionam), mas a área de
+  conteúdo mostra só um convite pra criar a empresa — nenhuma página de gestão real renderiza
+  (todas dependem de `organizationId` do JWT, inexistente nesse estado) — fonte: task
+  docs/tasks/036-backend-skip-onboarding.md.
+- [2026-08-19] Landing page pública (rota "/") existe pra converter visitante em conta
+  (trial/paga) — nav fixa (logo + Entrar/Criar conta), hero vendendo o produto, seção de planos.
+  Pricing nessa rodada é **vitrine estática** (3 planos: Starter/Profissional/Rede, conteúdo
+  definido pelo time, sem gateway de pagamento/checkout real) — todo CTA de plano leva pro
+  `/signup`, cobrança é dívida técnica registrada, não implementada — fonte: grill-me do usuário,
+  task docs/tasks/038-landing-page-publica.md.
+
 Registrar novas com `/law [regra]` ou via primeira pergunta do `/bigtask`.
 
 ## Regras inferidas

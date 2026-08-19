@@ -646,3 +646,89 @@ mover pra módulo compartilhado e fazer os componentes existentes importarem de 
 **Exemplo:** `features/scheduling/status-display.ts` (`statusLabels`, `statusTone`,
 `statusDotClasses`, `statusEventColorVar`) — consumido por `StatusBadge.tsx` (badge),
 `AgendaPage.tsx` (chip do evento + legenda), `UpcomingAppointments.tsx` (dot da lista).
+
+## Sweep de cor hardcoded — comando de verificação reprodutível, não confiar em "acho que já migrei tudo"
+
+**Camada/área:** UI
+**Definido por:** QA (task docs/tasks/033-sweep-cor-hardcoded-verificacao.md, Sprint 11)
+**Descrição:** Pra confirmar que nenhuma classe Tailwind de cor hardcoded (fora dos tokens
+semânticos de `docs/design/design-system.md` §1.1) foi reintroduzida numa tela, rodar grep amplo
+sobre toda a paleta padrão — não só as cores já catalogadas em §6. A lista de §6 (93 ocorrências)
+foi um levantamento pontual da task 025; qualquer sweep posterior precisa cobrir a paleta inteira
+de novo, porque um Dev pode introduzir uma cor que nunca apareceu no levantamento original (ex.:
+`bg-orange-400` novo, que não estava nos 93 mapeados).
+**Comando:**
+```
+grep -rnE '\b(bg|text|border|divide|outline|ring)-(slate|red|amber|emerald|blue|gray|zinc|neutral|green|yellow|orange)-\d{2,3}\b' frontend/src --include='*.tsx' --include='*.ts' --include='*.css'
+```
+Zero matches = pass. Hex literal (`#RRGGBB`) só é aceitável dentro de `index.css`, nas próprias
+definições de `--color-*` (light/dark) — qualquer hex fora desse arquivo é hardcode disfarçado.
+**Quando usar:** Fim de qualquer sprint/task que toque `frontend/src` visualmente, antes do QA dar
+pass — roda em segundos, sem custo, e é a única forma barata de confirmar "zero cor hardcoded"
+sem revisão visual tela por tela.
+**Exemplo:** Sprint 11 (033) rodou esse grep após as sprints 8/9 (031 Agenda redesign, 032 dark
+reskin) — 0 matches, confirmando que nenhuma das duas reintroduziu cor solta apesar de mexerem
+bastante em `AppLayout.tsx`/`Button.tsx`/componentes novos (`MiniCalendar`, `UpcomingAppointments`,
+`DaySummary`).
+
+## Code-splitting por rota: `React.lazy` só na página, shell (`AppLayout`/`ProtectedRoute`) sempre eager
+
+**Camada/área:** Presentation | UI
+**Definido por:** Dev Frontend (task docs/tasks/034-code-splitting-rotas.md, Sprint 11)
+**Descrição:** Quando `vite build` avisa bundle >500 kB, a divisão certa é por página de rota
+(`App.tsx`), não por componente aleatório: cada `<Route element={<XPage />} />` vira
+`const XPage = lazy(() => import('./features/.../XPage').then((m) => ({ default: m.XPage })))`,
+e `<Routes>` inteiro entra num `<Suspense fallback={<RouteFallback />}>` único. O shell da
+aplicação (`AppLayout`, `ProtectedRoute`, `RequireOrganization`) NUNCA vira lazy — ele precisa
+estar pronto antes de qualquer rota resolver, senão a nav pisca/monta depois do conteúdo (layout
+shift). O fallback do Suspense reusa o mesmo idioma de loading já usado dentro das páginas
+(`text-sm text-ink-muted`), não inventa spinner novo.
+**Quando usar:** No 1º aviso de `vite build` sobre chunk >500 kB — divisão por rota é sempre o
+primeiro corte (barato, sem lib nova, sem risco de comportamento); só granularizar mais (lib
+pesada dentro de 1 página só) se o bundle voltar a crescer depois do split por rota.
+**Exemplo:** `App.tsx` — 10 páginas (`LoginPage`...`ComprovantePage`) viraram lazy; bundle
+principal 792.90 kB → 250.79 kB. Maior chunk remanescente é `AgendaPage` (285.02 kB, por causa do
+FullCalendar) — ficou como está por já estar abaixo do limite de aviso, sem split adicional.
+
+## DateTime UTC em EF Core: convenção no `DbContext`, nunca `SpecifyKind` handler a handler
+
+**Camada/área:** Infrastructure | Backend
+**Definido por:** Broker (task docs/tasks/035-fix-datetime-utc-endpoints.md, Sprint 11) — ver
+docs/knowledge/errors-aprendidos.md pro bug original.
+**Descrição:** Todo `DateTime` que entra vindo de request body (model binding de JSON) chega com
+`Kind=Unspecified`; Npgsql 6+ rejeita gravar isso numa coluna `timestamp with time zone`. Em vez
+de `DateTime.SpecifyKind(x, DateTimeKind.Utc)` espalhado em cada `CommandHandler` que recebe uma
+data do cliente, a correção mora uma vez em `Infrastructure.Common.Persistence
+.UtcDateTimeConventionExtensions.ApplyUtcDateTimeConversion()` — dois `ValueConverter`
+(`DateTime`/`DateTime?`) registrados via `ConfigureConventions(ModelConfigurationBuilder)`,
+aplicados a TODA propriedade `DateTime` do modelo automaticamente, sem tocar em nenhuma
+`IEntityTypeConfiguration` individual.
+**Quando usar:** Todo `DbContext` novo do monólito precisa chamar
+`configurationBuilder.ApplyUtcDateTimeConversion()` dentro do próprio `ConfigureConventions` —
+mesma linha nos 7 existentes (Patients/Scheduling/Billing/Estoque/Identity/Records/Tenancy).
+Nunca resolver caso a caso com `SpecifyKind` num handler: some sozinho e some o próximo campo
+de data que alguém adicionar em qualquer módulo repete o mesmo 500.
+**Exemplo:**
+```csharp
+protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+    configurationBuilder.ApplyUtcDateTimeConversion();
+```
+
+## CTA de landing/marketing que navega: `<Link>` estilizado, nunca `<Link>` dentro de `<Button>`
+
+**Camada/área:** Presentation | UI
+**Definido por:** Dev Frontend (task docs/tasks/038-landing-page-publica.md, Sprint 11)
+**Descrição:** `components/ui/Button.tsx` renderiza um `<button>` de verdade — colocar um
+`<Link>`/`<a>` do react-router dentro dele é HTML inválido (elemento interativo dentro de
+elemento interativo) e quebra semântica/acessibilidade. Onde o "botão" é navegação pura (CTA de
+landing, "Assinar plano" etc.), o padrão é estilizar o próprio `<Link>` com as MESMAS classes
+Tailwind do variant do `Button` (copiadas como constante local, ex.: `ctaPrimary`/`ctaSecondary`
+em `LandingPage.tsx`) — não tentar fazer o `Button` aceitar `as`/`asChild` nem envolver o link
+num botão.
+**Quando usar:** Qualquer CTA que é 100% navegação (sem `onClick`/side-effect nenhum) — se o
+elemento só faz `navigate()`, ele é um link estilizado, não um botão. Se precisar de `onClick`
+real (mutation, side-effect) antes de navegar, aí sim é `Button` de verdade com `useNavigate()`
+dentro do handler.
+**Exemplo:** `features/marketing/LandingPage.tsx` — `ctaPrimary`/`ctaSecondary` (classes copiadas
+de `Button.tsx` variant `primary`/`secondary`) aplicadas direto em `<Link>` no nav, hero e cards
+de plano; zero `<Button>` na página inteira.

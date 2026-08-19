@@ -439,3 +439,29 @@ sistema (frontend rota, frontend menu, componente inline)?" ANTES de fechar o es
 não esperar o QA achar isso depois, em rodadas sucessivas de revalidação. Todo widening de
 role/permissão nova fecha com o checklist de 4 camadas (backend, rota, menu, componente) grepado
 de uma vez, não uma de cada vez.
+
+## [2026-08-19] `POST /api/patients` (e qualquer create com campo de data do body) 500 — DateTime Kind=Unspecified em coluna timestamp with time zone
+
+**Task:** docs/tasks/035-fix-datetime-utc-endpoints.md
+**Causa raiz:** Npgsql 6+ só aceita `DateTime` com `Kind=Utc` gravando em coluna Postgres
+`timestamp with time zone` — `DateTime` vindo de model binding de JSON (ex.:
+`{"dataNascimento":"2024-06-05"}` num `CreatePatientRequest`) chega no handler com
+`Kind=Unspecified` (`System.Text.Json` não infere timezone de uma string sem offset). Nenhum
+lugar do código setava o Kind antes do `SaveChangesAsync`.
+**Sintoma:** Frontend mostrava "Erro inesperado. Tente novamente." (mensagem genérica de
+`getApiErrorMessage`, porque a resposta era 500 sem o corpo `{ error }` que os controllers
+normalmente devolvem). Log do backend: `System.ArgumentException: Cannot write DateTime with
+Kind=Unspecified to PostgreSQL type 'timestamp with time zone'` dentro de
+`DbUpdateException` no `SaveChangesAsync`. Usuário reportou como "não consigo criar nada" —
+sintoma amplo, mas a causa é específica a qualquer campo `DateTime` de request body, não ao
+endpoint de paciente isoladamente.
+**Correção:** Convenção EF Core global (`UtcDateTimeConverter`/`UtcNullableDateTimeConverter` em
+`Infrastructure.Common.Persistence.UtcDateTimeConventionExtensions`), aplicada via
+`ConfigureConventions` nos 7 `DbContext`s do monólito (Patients, Scheduling, Billing, Estoque,
+Identity, Records, Tenancy) — qualquer `DateTime`/`DateTime?` do modelo é normalizado pra
+`Kind=Utc` na escrita (não altera o valor em si, só o Kind: `Unspecified`→`SpecifyKind(Utc)`,
+já-Utc/Local→`ToUniversalTime()`).
+**Como evitar de novo:** Nunca corrigir esse tipo de bug com `DateTime.SpecifyKind(...)`
+espalhado handler a handler (frágil — o próximo campo de data novo em qualquer módulo repete o
+mesmo 500). A correção certa é sempre na convenção do `DbContext`, uma vez por módulo, coberta
+pelos 7 de uma vez quando o bug aparecer de novo em qualquer um deles.

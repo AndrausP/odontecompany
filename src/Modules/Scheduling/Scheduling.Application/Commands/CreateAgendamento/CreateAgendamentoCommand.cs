@@ -11,5 +11,6 @@ public sealed record CreateAgendamentoCommand(
     Guid ProfissionalId,
     Guid SalaId,
     DateTime Inicio,
-    DateTime Fim
+    DateTime Fim,
+    Guid? ProcedimentoId = null
 ) : IRequest<Result<AgendamentoDto>>;

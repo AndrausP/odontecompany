@@ -1,6 +1,6 @@
 import { apiClient } from '../../lib/api-client'
 import type { PagedResult } from '../../types/common'
-import type { Agendamento, CreateAgendamentoRequest, Profissional, Sala, TipoContrato } from '../../types/scheduling'
+import type { Agendamento, CreateAgendamentoRequest, Procedimento, Profissional, Sala, TipoContrato } from '../../types/scheduling'
 
 export interface ListAgendamentosParams {
   dataInicio?: string
@@ -121,6 +121,37 @@ export async function updateSala(id: string, fields: CreateSalaFields): Promise<
     Nome: fields.nome,
     CapacidadeMaxima: fields.capacidadeMaxima || undefined,
     BranchId: fields.branchId || undefined,
+  })
+  return data
+}
+
+export interface ProcedimentoFields {
+  nome: string
+  valorPadrao?: number
+  duracaoPadraoMinutos?: number
+}
+
+export async function listProcedimentos(): Promise<Procedimento[]> {
+  const { data } = await apiClient.get<Procedimento[]>('/api/procedimentos')
+  return data
+}
+
+/** POST /api/procedimentos (Owner/Admin) — catálogo de procedimentos/serviços (task 044). */
+export async function createProcedimento(fields: ProcedimentoFields): Promise<Procedimento> {
+  const { data } = await apiClient.post<Procedimento>('/api/procedimentos', {
+    Nome: fields.nome,
+    ValorPadrao: fields.valorPadrao || undefined,
+    DuracaoPadraoMinutos: fields.duracaoPadraoMinutos || undefined,
+  })
+  return data
+}
+
+/** PUT /api/procedimentos/{id} (Owner/Admin) — edição de cadastro. */
+export async function updateProcedimento(id: string, fields: ProcedimentoFields): Promise<Procedimento> {
+  const { data } = await apiClient.put<Procedimento>(`/api/procedimentos/${id}`, {
+    Nome: fields.nome,
+    ValorPadrao: fields.valorPadrao || undefined,
+    DuracaoPadraoMinutos: fields.duracaoPadraoMinutos || undefined,
   })
   return data
 }

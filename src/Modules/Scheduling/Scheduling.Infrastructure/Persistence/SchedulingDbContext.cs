@@ -28,6 +28,7 @@ public sealed class SchedulingDbContext : DbContext, IOrganizationAwareDbContext
     public DbSet<Agendamento> Agendamentos => Set<Agendamento>();
     public DbSet<Profissional> Profissionais => Set<Profissional>();
     public DbSet<Sala> Salas => Set<Sala>();
+    public DbSet<Procedimento> Procedimentos => Set<Procedimento>();
     public DbSet<SchedulingOutboxMessage> OutboxMessages => Set<SchedulingOutboxMessage>();
 
     // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — ver nota em

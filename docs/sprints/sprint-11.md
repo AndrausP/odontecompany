@@ -143,3 +143,14 @@ digitação pela UI. `AtualizarDados` novo no domínio dos dois, endpoints `PUT`
 tela de Configurações (mesmo padrão de `EditBranchModal`). Detalhes em
 docs/tasks/043-editar-profissional-sala.md. `dotnet test`: 380/380. Validado ao vivo (corrigiu um
 cadastro legado de tipo de contrato inválido pela própria tela).
+
+## Reabertura 10 (044) — catálogo de Procedimentos
+
+Feature nova (continuação da mesma diretriz de inovar). Agenda não tinha padronização de
+serviço/valor/duração — cada agendamento partia do zero. `Procedimento` novo agregado (Scheduling)
+com `Nome`/`ValorPadrao`/`DuracaoPadraoMinutos` opcionais; `Agendamento.ProcedimentoId` novo
+(nullable, trailing param); `CreateAgendamentoCommandHandler` valida referência igual já fazia com
+paciente/profissional/sala. CRUD completo + card na tela de Configurações + select no modal de
+"Novo agendamento" (auto-preenche hora de fim a partir da duração padrão). Detalhes em
+docs/tasks/044-catalogo-procedimentos.md. `dotnet test`: 393/393. Validado ao vivo (criei/editei
+procedimento, confirmei que aparece no select do agendamento com valor formatado).

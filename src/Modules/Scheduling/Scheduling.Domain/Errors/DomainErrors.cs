@@ -24,6 +24,7 @@ public static class DomainErrors
         public static readonly Error PacienteNaoEncontrado = new("Agendamento.PacienteNaoEncontrado", "Paciente não encontrado.");
         public static readonly Error ProfissionalNaoEncontrado = new("Agendamento.ProfissionalNaoEncontrado", "Profissional não encontrado ou inativo.");
         public static readonly Error SalaNaoEncontrada = new("Agendamento.SalaNaoEncontrada", "Sala não encontrada ou inativa.");
+        public static readonly Error ProcedimentoNaoEncontrado = new("Agendamento.ProcedimentoNaoEncontrado", "Procedimento não encontrado ou inativo.");
         public static readonly Error HorarioIndisponivel = new(
             "Agendamento.HorarioIndisponivel", "Já existe um agendamento para este profissional neste horário.");
         public static readonly Error SoConfirmaSeAgendado = new(
@@ -56,5 +57,14 @@ public static class DomainErrors
         public static readonly Error CapacidadeInvalida = new("Sala.CapacidadeInvalida", "Capacidade máxima deve ser maior que zero.");
         public static readonly Error NaoEncontrada = new("Sala.NaoEncontrada", "Sala não encontrada.");
         public static readonly Error BranchInvalida = new("Sala.BranchInvalida", "Branch inválida ou inativa.");
+    }
+
+    /// <summary>Erros de <see cref="Entities.Procedimento"/> — catálogo de procedimentos/serviços (task 044).</summary>
+    public static class Procedimento
+    {
+        public static readonly Error NomeObrigatorio = new("Procedimento.NomeObrigatorio", "Nome é obrigatório.");
+        public static readonly Error ValorInvalido = new("Procedimento.ValorInvalido", "Valor padrão não pode ser negativo.");
+        public static readonly Error DuracaoInvalida = new("Procedimento.DuracaoInvalida", "Duração padrão deve ser maior que zero.");
+        public static readonly Error NaoEncontrado = new("Procedimento.NaoEncontrado", "Procedimento não encontrado.");
     }
 }

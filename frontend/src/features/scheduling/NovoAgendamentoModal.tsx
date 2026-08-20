@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Label } from '../../components/ui/Label'
 import { Select } from '../../components/ui/Select'
-import { createAgendamento, listProfissionais, listSalas } from './api'
+import { createAgendamento, listProcedimentos, listProfissionais, listSalas } from './api'
 import { listPatients } from '../patients/api'
 import { getApiErrorMessage } from '../../lib/query-client'
 
@@ -19,6 +19,7 @@ const schema = z
     data: z.string().min(1, 'Data é obrigatória'),
     horaInicio: z.string().min(1, 'Hora de início é obrigatória'),
     horaFim: z.string().min(1, 'Hora de fim é obrigatória'),
+    procedimentoId: z.string().optional(),
   })
   .refine((v) => v.horaFim > v.horaInicio, {
     message: 'Hora de fim deve ser depois da hora de início',
@@ -41,14 +42,17 @@ export function NovoAgendamentoModal({ open, onClose, initialDate }: NovoAgendam
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { data: initialDate ?? '', horaInicio: '09:00', horaFim: '09:30' },
+    defaultValues: { data: initialDate ?? '', horaInicio: '09:00', horaFim: '09:30', procedimentoId: '' },
   })
 
   const { data: profissionais } = useQuery({ queryKey: ['profissionais'], queryFn: listProfissionais, enabled: open })
   const { data: salas } = useQuery({ queryKey: ['salas'], queryFn: listSalas, enabled: open })
+  const { data: procedimentos } = useQuery({ queryKey: ['procedimentos'], queryFn: listProcedimentos, enabled: open })
   const { data: pacientesPage } = useQuery({
     queryKey: ['patients', 'select'],
     queryFn: () => listPatients({ pageSize: 100 }),
@@ -71,7 +75,22 @@ export function NovoAgendamentoModal({ open, onClose, initialDate }: NovoAgendam
       salaId: values.salaId,
       inicio: `${values.data}T${values.horaInicio}:00`,
       fim: `${values.data}T${values.horaFim}:00`,
+      procedimentoId: values.procedimentoId || undefined,
     })
+  }
+
+  /** Ao escolher um procedimento com duração padrão, sugere a hora de fim (task 044). */
+  const handleProcedimentoChange = (procedimentoId: string) => {
+    setValue('procedimentoId', procedimentoId)
+    const procedimento = procedimentos?.find((p) => p.id === procedimentoId)
+    if (!procedimento?.duracaoPadraoMinutos) return
+    const horaInicio = watch('horaInicio')
+    if (!horaInicio) return
+    const [h, m] = horaInicio.split(':').map(Number)
+    const inicioMinutos = h * 60 + m
+    const fimMinutos = inicioMinutos + procedimento.duracaoPadraoMinutos
+    const horaFim = `${String(Math.floor(fimMinutos / 60) % 24).padStart(2, '0')}:${String(fimMinutos % 60).padStart(2, '0')}`
+    setValue('horaFim', horaFim)
   }
 
   return (
@@ -108,6 +127,19 @@ export function NovoAgendamentoModal({ open, onClose, initialDate }: NovoAgendam
             {salas?.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nome}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="procedimentoId">Procedimento (opcional)</Label>
+          <Select id="procedimentoId" {...register('procedimentoId')} onChange={(e) => handleProcedimentoChange(e.target.value)}>
+            <option value="">Sem procedimento específico</option>
+            {procedimentos?.filter((p) => p.ativo).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nome}
+                {p.valorPadrao ? ` — R$ ${p.valorPadrao.toFixed(2)}` : ''}
               </option>
             ))}
           </Select>

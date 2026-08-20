@@ -1,7 +1,7 @@
 /** Espelha Scheduling.Domain.Enums.AgendamentoStatus. */
 export type AgendamentoStatus = 'Agendado' | 'Confirmado' | 'Cancelado' | 'Concluido'
 
-/** Espelha Scheduling.Contracts.AgendamentoDto. */
+/** Espelha Scheduling.Contracts.AgendamentoDto (+ProcedimentoId, task 044). */
 export interface Agendamento {
   id: string
   pacienteId: string
@@ -14,6 +14,7 @@ export interface Agendamento {
   valorConsulta: number | null
   createdAt: string
   updatedAt: string | null
+  procedimentoId: string | null
 }
 
 /** Espelha Scheduling.Domain.Enums.TipoContrato. */
@@ -48,4 +49,14 @@ export interface CreateAgendamentoRequest {
   salaId: string
   inicio: string
   fim: string
+  procedimentoId?: string
+}
+
+/** Espelha Scheduling.Contracts.ProcedimentoDto — catálogo de procedimentos/serviços (task 044). */
+export interface Procedimento {
+  id: string
+  nome: string
+  valorPadrao: number | null
+  duracaoPadraoMinutos: number | null
+  ativo: boolean
 }

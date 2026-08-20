@@ -20,5 +20,6 @@ public sealed record AgendamentoDto(
     string? MotivoCancelamento,
     decimal? ValorConsulta,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    Guid? ProcedimentoId
 ) : IModuleContract;

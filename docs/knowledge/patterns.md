@@ -867,3 +867,17 @@ aceito) — nunca bloqueia nem o cadastro do recurso, nem o aceite do convite.
 **Quando usar:** Qualquer entidade de "pessoa que trabalha na clínica mas pode ou não ter login"
 (recepcionista sem sistema próprio, técnico, etc.) — mesmo desenho: recurso primeiro, acesso
 depois, opcional, nunca no caminho crítico um do outro.
+
+## Catálogo simples (Procedimento) — mesmo CRUD de Profissional/Sala, referência opcional validada no agregado que consome (task 044)
+
+Entidade "catálogo" (nome + campos padrão opcionais, sem regra de negócio própria além de
+existir/estar ativa) sempre replica o mesmo esqueleto: `Criar`/`AtualizarDados`/`Desativar` no
+domínio, CRUD idêntico em Application/Infrastructure/Controller, defesa de IDOR padrão
+(`OrganizationId` do token). Quando outro agregado passa a referenciar essa entidade por Id
+opcional (`Agendamento.ProcedimentoId`), o campo entra como trailing param nullable (não quebra
+call sites existentes) e o handler que cria/atualiza o agregado consumidor valida a referência
+igual já validava paciente/profissional/sala — mesmo formato de erro `XNaoEncontrado`, mesma
+posição no fluxo (antes do lock/efeito colateral).
+**Quando usar:** Qualquer "catálogo de apoio" novo (ex.: convênios, categorias de estoque) que
+outro agregado vai referenciar por Id opcional — copiar o CRUD do catálogo mais recente, não
+reinventar a validação de referência.

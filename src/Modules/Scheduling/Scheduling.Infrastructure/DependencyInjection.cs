@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IAgendamentoRepository, AgendamentoRepository>();
         services.AddScoped<IProfissionalRepository, ProfissionalRepository>();
         services.AddScoped<ISalaRepository, SalaRepository>();
+        services.AddScoped<IProcedimentoRepository, ProcedimentoRepository>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<SchedulingDbContext>());
 
         services.AddScoped<IRedisLockService, RedisLockService>();

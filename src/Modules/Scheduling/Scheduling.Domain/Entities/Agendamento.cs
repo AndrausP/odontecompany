@@ -24,25 +24,32 @@ public class Agendamento : AggregateRoot, IMustHaveOrganization
     public string? MotivoCancelamento { get; private set; }
     public decimal? ValorConsulta { get; private set; }
 
+    /// <summary>Procedimento escolhido (catálogo, task 044) — opcional, puramente informativo:
+    /// nunca sobrescreve <see cref="ValorConsulta"/> nem o <see cref="Periodo"/> automaticamente,
+    /// só existe pra mostrar no chip do calendário e sugerir valor/duração no frontend.</summary>
+    public Guid? ProcedimentoId { get; private set; }
+
     private Agendamento() { } // EF Core
 
-    private Agendamento(Guid organizationId, Guid pacienteId, Guid profissionalId, Guid salaId, PeriodoHorario periodo)
+    private Agendamento(Guid organizationId, Guid pacienteId, Guid profissionalId, Guid salaId, PeriodoHorario periodo, Guid? procedimentoId)
     {
         OrganizationId = organizationId;
         PacienteId = pacienteId;
         ProfissionalId = profissionalId;
         SalaId = salaId;
         Periodo = periodo;
+        ProcedimentoId = procedimentoId;
         Status = AgendamentoStatus.Agendado;
     }
 
     /// <summary>
     /// Cria um agendamento com status inicial Agendado. Não checa sobreposição de horário aqui —
     /// isso depende de consulta ao repositório (I/O), responsabilidade do Use Case
-    /// (CreateAgendamentoCommandHandler), nunca do agregado em memória.
+    /// (CreateAgendamentoCommandHandler), nunca do agregado em memória. <paramref name="procedimentoId"/>
+    /// opcional, trailing — parâmetro novo (task 044), não quebra nenhum call site posicional existente.
     /// </summary>
     public static Result<Agendamento> Criar(
-        Guid organizationId, Guid pacienteId, Guid profissionalId, Guid salaId, DateTime inicio, DateTime fim)
+        Guid organizationId, Guid pacienteId, Guid profissionalId, Guid salaId, DateTime inicio, DateTime fim, Guid? procedimentoId = null)
     {
         if (organizationId == Guid.Empty)
             return Result.Failure<Agendamento>(DomainErrors.Agendamento.OrganizationInvalido);
@@ -60,7 +67,7 @@ public class Agendamento : AggregateRoot, IMustHaveOrganization
         if (periodoResult.IsFailure)
             return Result.Failure<Agendamento>(periodoResult.Error);
 
-        return Result.Success(new Agendamento(organizationId, pacienteId, profissionalId, salaId, periodoResult.Value));
+        return Result.Success(new Agendamento(organizationId, pacienteId, profissionalId, salaId, periodoResult.Value, procedimentoId));
     }
 
     /// <summary>Agendado → Confirmado. Qualquer outro status de origem falha.</summary>

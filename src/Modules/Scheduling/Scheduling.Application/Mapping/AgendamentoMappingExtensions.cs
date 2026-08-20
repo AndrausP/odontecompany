@@ -17,7 +17,11 @@ public static class AgendamentoMappingExtensions
         agendamento.MotivoCancelamento,
         agendamento.ValorConsulta,
         agendamento.CreatedAt,
-        agendamento.UpdatedAt);
+        agendamento.UpdatedAt,
+        agendamento.ProcedimentoId);
+
+    public static ProcedimentoDto ToDto(this Procedimento procedimento) => new(
+        procedimento.Id, procedimento.Nome, procedimento.ValorPadrao, procedimento.DuracaoPadraoMinutos, procedimento.Ativo);
 
     public static ProfissionalDto ToDto(this Profissional profissional) => new(
         profissional.Id,

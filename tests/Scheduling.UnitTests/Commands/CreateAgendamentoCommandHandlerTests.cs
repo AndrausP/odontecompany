@@ -17,6 +17,7 @@ public class CreateAgendamentoCommandHandlerTests
     private Mock<IAgendamentoRepository> _agendamentoRepository = null!;
     private Mock<IProfissionalRepository> _profissionalRepository = null!;
     private Mock<ISalaRepository> _salaRepository = null!;
+    private Mock<IProcedimentoRepository> _procedimentoRepository = null!;
     private Mock<IPatientLookup> _patientLookup = null!;
     private Mock<IRedisLockService> _lockService = null!;
     private Mock<IAvailabilityCache> _availabilityCache = null!;
@@ -29,6 +30,7 @@ public class CreateAgendamentoCommandHandlerTests
         _agendamentoRepository = new Mock<IAgendamentoRepository>();
         _profissionalRepository = new Mock<IProfissionalRepository>();
         _salaRepository = new Mock<ISalaRepository>();
+        _procedimentoRepository = new Mock<IProcedimentoRepository>();
         _patientLookup = new Mock<IPatientLookup>();
         _lockService = new Mock<IRedisLockService>();
         _availabilityCache = new Mock<IAvailabilityCache>();
@@ -41,19 +43,22 @@ public class CreateAgendamentoCommandHandlerTests
             _agendamentoRepository.Object,
             _profissionalRepository.Object,
             _salaRepository.Object,
+            _procedimentoRepository.Object,
             _patientLookup.Object,
             _lockService.Object,
             _availabilityCache.Object,
             _unitOfWork.Object);
     }
 
-    private static CreateAgendamentoCommand ValidCommand(Guid? organizationId = null, Guid? profissionalId = null, Guid? salaId = null) => new(
+    private static CreateAgendamentoCommand ValidCommand(
+        Guid? organizationId = null, Guid? profissionalId = null, Guid? salaId = null, Guid? procedimentoId = null) => new(
         organizationId ?? Guid.NewGuid(),
         Guid.NewGuid(),
         profissionalId ?? Guid.NewGuid(),
         salaId ?? Guid.NewGuid(),
         ValidInicio,
-        ValidFim);
+        ValidFim,
+        procedimentoId);
 
     private void SetupHappyPath(Guid profissionalId, Guid salaId)
     {
@@ -81,6 +86,38 @@ public class CreateAgendamentoCommandHandlerTests
         _agendamentoRepository.Verify(r => r.AddAsync(It.IsAny<Agendamento>(), It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _availabilityCache.Verify(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ── Regra: Procedimento (task 044) é opcional — só valida se informado ───────────────────
+    [Test]
+    public async Task Should_CreateAgendamento_When_ProcedimentoIdIsValidAndAtivo()
+    {
+        var profissionalId = Guid.NewGuid();
+        var salaId = Guid.NewGuid();
+        var procedimentoId = Guid.NewGuid();
+        SetupHappyPath(profissionalId, salaId);
+        _procedimentoRepository.Setup(r => r.GetByIdAsync(procedimentoId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Procedimento.Criar(Guid.NewGuid(), "Limpeza").Value);
+
+        var result = await _handler.Handle(ValidCommand(profissionalId: profissionalId, salaId: salaId, procedimentoId: procedimentoId), CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value.ProcedimentoId, Is.EqualTo(procedimentoId));
+    }
+
+    [Test]
+    public async Task Should_ReturnFailure_When_ProcedimentoIdDoesNotExist()
+    {
+        var profissionalId = Guid.NewGuid();
+        var salaId = Guid.NewGuid();
+        SetupHappyPath(profissionalId, salaId);
+        _procedimentoRepository.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Procedimento?)null);
+
+        var result = await _handler.Handle(ValidCommand(profissionalId: profissionalId, salaId: salaId, procedimentoId: Guid.NewGuid()), CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error.Code, Is.EqualTo("Agendamento.ProcedimentoNaoEncontrado"));
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ── Regra: paciente inexistente falha antes de qualquer escrita ──────────────────────────

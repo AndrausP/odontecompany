@@ -33,6 +33,7 @@ public sealed class AgendamentoConfiguration : IEntityTypeConfiguration<Agendame
         builder.Property(a => a.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
         builder.Property(a => a.MotivoCancelamento).HasMaxLength(500);
         builder.Property(a => a.ValorConsulta).HasColumnType("numeric(10,2)");
+        builder.Property(a => a.ProcedimentoId); // opcional (task 044) — referência solta, sem FK de projeto, mesmo racional de ProfissionalId/SalaId
         builder.Property(a => a.CreatedAt).IsRequired();
 
         // Concorrência otimista via xmin nativo do Postgres — recomendação oficial do provider

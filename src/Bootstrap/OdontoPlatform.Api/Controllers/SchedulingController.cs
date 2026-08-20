@@ -44,7 +44,8 @@ public sealed class SchedulingController : ControllerBase
         if (organizationId is null)
             return Unauthorized(new { error = "Organization não resolvido a partir do token." });
 
-        var command = new CreateAgendamentoCommand(organizationId.Value, request.PacienteId, request.ProfissionalId, request.SalaId, request.Inicio, request.Fim);
+        var command = new CreateAgendamentoCommand(
+            organizationId.Value, request.PacienteId, request.ProfissionalId, request.SalaId, request.Inicio, request.Fim, request.ProcedimentoId);
         var result = await _mediator.Send(command, ct);
 
         return result.IsSuccess
@@ -163,7 +164,7 @@ public sealed class SchedulingController : ControllerBase
 }
 
 /// <summary>Corpo da requisição de criação — organization nunca é informado aqui (vem do JWT).</summary>
-public sealed record CreateAgendamentoRequest(Guid PacienteId, Guid ProfissionalId, Guid SalaId, DateTime Inicio, DateTime Fim);
+public sealed record CreateAgendamentoRequest(Guid PacienteId, Guid ProfissionalId, Guid SalaId, DateTime Inicio, DateTime Fim, Guid? ProcedimentoId = null);
 
 public sealed record CancelarAgendamentoRequest(string? Motivo);
 

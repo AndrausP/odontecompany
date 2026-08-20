@@ -3,11 +3,21 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, CreditCard, MapPin, Pencil, Stethoscope, DoorOpen } from 'lucide-react'
+import { Building2, ClipboardList, CreditCard, MapPin, Pencil, Stethoscope, DoorOpen } from 'lucide-react'
 import { getOrganization, listBranches, updateBranch, updateOrganization } from './api'
 import { listPlans, selectPlan } from '../subscriptions/api'
 import { PlanCards } from '../subscriptions/PlanCards'
-import { createProfissional, createSala, listProfissionais, listSalas, updateProfissional, updateSala } from '../scheduling/api'
+import {
+  createProcedimento,
+  createProfissional,
+  createSala,
+  listProcedimentos,
+  listProfissionais,
+  listSalas,
+  updateProcedimento,
+  updateProfissional,
+  updateSala,
+} from '../scheduling/api'
 import { useMe } from '../auth/useMe'
 import { getApiErrorMessage } from '../../lib/query-client'
 import { toneClasses } from '../../lib/status-tone'
@@ -20,7 +30,7 @@ import { Select } from '../../components/ui/Select'
 import { Modal } from '../../components/ui/Modal'
 import type { BranchDetails } from '../../types/organizations'
 import type { PlanTier } from '../../types/subscriptions'
-import type { Profissional, Sala, TipoContrato } from '../../types/scheduling'
+import type { Procedimento, Profissional, Sala, TipoContrato } from '../../types/scheduling'
 
 const TIPO_CONTRATO_LABELS: Record<TipoContrato, string> = { Clt: 'CLT', Pj: 'PJ', Autonomo: 'Autônomo' }
 
@@ -53,6 +63,13 @@ const salaSchema = z.object({
   capacidadeMaxima: z.string().optional(),
 })
 type SalaFormValues = z.infer<typeof salaSchema>
+
+const procedimentoSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório').max(200, 'Nome não pode ter mais de 200 caracteres'),
+  valorPadrao: z.string().optional(),
+  duracaoPadraoMinutos: z.string().optional(),
+})
+type ProcedimentoFormValues = z.infer<typeof procedimentoSchema>
 
 /**
  * Seção "Empresa" — edita Nome/Cnpj/Telefone/Endereco da organização ativa. Era "fora de escopo"
@@ -338,6 +355,71 @@ function EditSalaModal({ sala, onClose }: { sala: Sala; onClose: () => void }) {
   )
 }
 
+/** Modal de edição de um procedimento — mesmo padrão de `EditSalaModal` (task 044). */
+function EditProcedimentoModal({ procedimento, onClose }: { procedimento: Procedimento; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProcedimentoFormValues>({
+    resolver: zodResolver(procedimentoSchema),
+    defaultValues: {
+      nome: procedimento.nome,
+      valorPadrao: procedimento.valorPadrao?.toString() ?? '',
+      duracaoPadraoMinutos: procedimento.duracaoPadraoMinutos?.toString() ?? '',
+    },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (values: ProcedimentoFormValues) =>
+      updateProcedimento(procedimento.id, {
+        nome: values.nome,
+        valorPadrao: values.valorPadrao ? Number(values.valorPadrao) : undefined,
+        duracaoPadraoMinutos: values.duracaoPadraoMinutos ? Number(values.duracaoPadraoMinutos) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['procedimentos'] })
+      onClose()
+    },
+    onError: (error) => setServerError(getApiErrorMessage(error)),
+  })
+
+  return (
+    <Modal open onClose={onClose} title={`Editar ${procedimento.nome}`}>
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-4" noValidate>
+        <div>
+          <Label htmlFor="nomeProcedimentoEdit">Nome do procedimento</Label>
+          <Input id="nomeProcedimentoEdit" error={errors.nome?.message} {...register('nome')} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="valorProcedimentoEdit">Valor padrão (R$)</Label>
+            <Input id="valorProcedimentoEdit" type="number" min={0} step="0.01" {...register('valorPadrao')} />
+          </div>
+          <div>
+            <Label htmlFor="duracaoProcedimentoEdit">Duração padrão (min)</Label>
+            <Input id="duracaoProcedimentoEdit" type="number" min={1} {...register('duracaoPadraoMinutos')} />
+          </div>
+        </div>
+
+        {serverError && <p className="text-sm text-danger">{serverError}</p>}
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 /** Seção "Unidades" — lista as branches da organização, edição via modal (uma de cada vez). */
 function BranchesSection() {
   const [editing, setEditing] = useState<BranchDetails | null>(null)
@@ -398,9 +480,14 @@ function ResourcesSection() {
   const [emailProfissional, setEmailProfissional] = useState('')
   const [feedbackProfissional, setFeedbackProfissional] = useState<string | null>(null)
   const [nomeSala, setNomeSala] = useState('')
+  const [editingProcedimento, setEditingProcedimento] = useState<Procedimento | null>(null)
+  const [nomeProcedimento, setNomeProcedimento] = useState('')
+  const [valorProcedimento, setValorProcedimento] = useState('')
+  const [duracaoProcedimento, setDuracaoProcedimento] = useState('')
 
   const { data: profissionais } = useQuery({ queryKey: ['profissionais'], queryFn: listProfissionais })
   const { data: salas } = useQuery({ queryKey: ['salas'], queryFn: listSalas })
+  const { data: procedimentos } = useQuery({ queryKey: ['procedimentos'], queryFn: listProcedimentos })
 
   const profissionalMutation = useMutation({
     mutationFn: () =>
@@ -436,8 +523,23 @@ function ResourcesSection() {
     },
   })
 
+  const procedimentoMutation = useMutation({
+    mutationFn: () =>
+      createProcedimento({
+        nome: nomeProcedimento,
+        valorPadrao: valorProcedimento ? Number(valorProcedimento) : undefined,
+        duracaoPadraoMinutos: duracaoProcedimento ? Number(duracaoProcedimento) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['procedimentos'] })
+      setNomeProcedimento('')
+      setValorProcedimento('')
+      setDuracaoProcedimento('')
+    },
+  })
+
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       <Card>
         <CardHeader className="flex items-center gap-2">
           <Stethoscope size={18} className="text-brand" />
@@ -570,8 +672,73 @@ function ResourcesSection() {
         </CardBody>
       </Card>
 
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <ClipboardList size={18} className="text-brand" />
+          <CardTitle>Procedimentos</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <form
+            className="space-y-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (nomeProcedimento.trim()) procedimentoMutation.mutate()
+            }}
+          >
+            <Input placeholder="Nome (ex.: Limpeza, Extração)" value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} />
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Valor padrão (opcional)"
+                value={valorProcedimento}
+                onChange={(e) => setValorProcedimento(e.target.value)}
+              />
+              <Input
+                type="number"
+                min={1}
+                placeholder="Duração min. (opcional)"
+                value={duracaoProcedimento}
+                onChange={(e) => setDuracaoProcedimento(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="secondary"
+              className="w-full"
+              disabled={procedimentoMutation.isPending || !nomeProcedimento.trim()}
+            >
+              {procedimentoMutation.isPending ? 'Adicionando…' : '+ Adicionar procedimento'}
+            </Button>
+          </form>
+
+          {procedimentoMutation.isError && <p className="text-sm text-danger">{getApiErrorMessage(procedimentoMutation.error)}</p>}
+
+          <ul className="divide-y divide-border text-sm">
+            {procedimentos?.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-2 py-1.5">
+                <div>
+                  <p className="text-ink">{p.nome}</p>
+                  <p className="text-xs text-ink-muted">
+                    {[p.valorPadrao ? `R$ ${p.valorPadrao.toFixed(2)}` : null, p.duracaoPadraoMinutos ? `${p.duracaoPadraoMinutos} min` : null]
+                      .filter(Boolean)
+                      .join(' · ') || 'Sem valor/duração padrão'}
+                  </p>
+                </div>
+                <Button variant="ghost" onClick={() => setEditingProcedimento(p)} aria-label={`Editar ${p.nome}`}>
+                  <Pencil size={16} />
+                </Button>
+              </li>
+            ))}
+            {procedimentos?.length === 0 && <li className="py-1.5 text-ink-muted">Nenhum procedimento cadastrado.</li>}
+          </ul>
+        </CardBody>
+      </Card>
+
       {editingProfissional && <EditProfissionalModal profissional={editingProfissional} onClose={() => setEditingProfissional(null)} />}
       {editingSala && <EditSalaModal sala={editingSala} onClose={() => setEditingSala(null)} />}
+      {editingProcedimento && <EditProcedimentoModal procedimento={editingProcedimento} onClose={() => setEditingProcedimento(null)} />}
     </div>
   )
 }

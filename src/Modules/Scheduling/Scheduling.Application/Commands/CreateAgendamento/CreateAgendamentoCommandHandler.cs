@@ -28,6 +28,7 @@ public sealed class CreateAgendamentoCommandHandler : IRequestHandler<CreateAgen
     private readonly IAgendamentoRepository _agendamentoRepository;
     private readonly IProfissionalRepository _profissionalRepository;
     private readonly ISalaRepository _salaRepository;
+    private readonly IProcedimentoRepository _procedimentoRepository;
     private readonly IPatientLookup _patientLookup;
     private readonly IRedisLockService _lockService;
     private readonly IAvailabilityCache _availabilityCache;
@@ -37,6 +38,7 @@ public sealed class CreateAgendamentoCommandHandler : IRequestHandler<CreateAgen
         IAgendamentoRepository agendamentoRepository,
         IProfissionalRepository profissionalRepository,
         ISalaRepository salaRepository,
+        IProcedimentoRepository procedimentoRepository,
         IPatientLookup patientLookup,
         IRedisLockService lockService,
         IAvailabilityCache availabilityCache,
@@ -45,6 +47,7 @@ public sealed class CreateAgendamentoCommandHandler : IRequestHandler<CreateAgen
         _agendamentoRepository = agendamentoRepository;
         _profissionalRepository = profissionalRepository;
         _salaRepository = salaRepository;
+        _procedimentoRepository = procedimentoRepository;
         _patientLookup = patientLookup;
         _lockService = lockService;
         _availabilityCache = availabilityCache;
@@ -64,6 +67,14 @@ public sealed class CreateAgendamentoCommandHandler : IRequestHandler<CreateAgen
         if (sala is null || !sala.Ativa)
             return Result.Failure<AgendamentoDto>(DomainErrors.Agendamento.SalaNaoEncontrada);
 
+        // Procedimento é opcional (task 044) — só valida existência/ativo se foi informado.
+        if (request.ProcedimentoId is not null)
+        {
+            var procedimento = await _procedimentoRepository.GetByIdAsync(request.ProcedimentoId.Value, cancellationToken);
+            if (procedimento is null || !procedimento.Ativo)
+                return Result.Failure<AgendamentoDto>(DomainErrors.Agendamento.ProcedimentoNaoEncontrado);
+        }
+
         var lockKey = SchedulingCacheKeys.LockConfirmacao(request.OrganizationId, request.ProfissionalId, request.Inicio);
         var lockToken = await _lockService.AcquireAsync(lockKey, TimeSpan.FromSeconds(5), cancellationToken);
         if (lockToken is null)
@@ -76,7 +87,8 @@ public sealed class CreateAgendamentoCommandHandler : IRequestHandler<CreateAgen
             if (await _agendamentoRepository.ExisteSobreposicaoAsync(request.ProfissionalId, request.Inicio, request.Fim, ignorarAgendamentoId: null, cancellationToken))
                 return Result.Failure<AgendamentoDto>(DomainErrors.Agendamento.HorarioIndisponivel);
 
-            var agendamentoResult = Agendamento.Criar(request.OrganizationId, request.PacienteId, request.ProfissionalId, request.SalaId, request.Inicio, request.Fim);
+            var agendamentoResult = Agendamento.Criar(
+                request.OrganizationId, request.PacienteId, request.ProfissionalId, request.SalaId, request.Inicio, request.Fim, request.ProcedimentoId);
             if (agendamentoResult.IsFailure)
                 return Result.Failure<AgendamentoDto>(agendamentoResult.Error);
 

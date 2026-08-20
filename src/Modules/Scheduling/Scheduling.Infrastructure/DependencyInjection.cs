@@ -47,6 +47,7 @@ public static class DependencyInjection
 
         // Porta de leitura agregada pro módulo Reporting (task 008) compor dashboards.
         services.AddScoped<IAgendaSummaryProvider, AgendaSummaryProvider>();
+        services.AddScoped<IReceitaPorProcedimentoProvider, ReceitaPorProcedimentoProvider>();
 
         // Porta de leitura de profissionais (task 022) — consumida pelo módulo Reporting
         // (task 023) pra montar o relatório de comissão sem JOIN cruzado.

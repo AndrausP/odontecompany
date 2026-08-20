@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reporting.Application.Queries.GetAgendaOcupacao;
 using Reporting.Application.Queries.GetDashboardResumo;
 using Reporting.Application.Queries.GetFaturamentoPorPeriodo;
+using Reporting.Application.Queries.GetReceitaPorProcedimento;
 
 namespace OdontoPlatform.Api.Controllers;
 
@@ -59,6 +60,18 @@ public sealed class ReportsController : ControllerBase
             return Unauthorized(new { error = "Organization não resolvido a partir do token." });
 
         var result = await _mediator.Send(new GetAgendaOcupacaoQuery(organizationId.Value, dataInicio, dataFim), ct);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error.Message });
+    }
+
+    /// <summary>Receita de agendamentos concluídos no período, agrupada por procedimento (task 044).</summary>
+    [HttpGet("procedimentos")]
+    public async Task<IActionResult> GetReceitaPorProcedimento([FromQuery] DateTime dataInicio, [FromQuery] DateTime dataFim, CancellationToken ct)
+    {
+        var organizationId = _currentUser.OrganizationId;
+        if (organizationId is null)
+            return Unauthorized(new { error = "Organization não resolvido a partir do token." });
+
+        var result = await _mediator.Send(new GetReceitaPorProcedimentoQuery(organizationId.Value, dataInicio, dataFim), ct);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error.Message });
     }
 }

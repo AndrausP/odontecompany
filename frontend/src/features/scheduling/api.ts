@@ -101,3 +101,26 @@ export async function createSala(fields: CreateSalaFields): Promise<Sala> {
   })
   return data
 }
+
+/** PUT /api/profissionais/{id} (Owner/Admin) — edição de cadastro (tela de Configurações). Não reenvia convite. */
+export async function updateProfissional(id: string, fields: CreateProfissionalFields): Promise<Profissional> {
+  const { data } = await apiClient.put<Profissional>(`/api/profissionais/${id}`, {
+    Nome: fields.nome,
+    Especialidade: fields.especialidade,
+    TipoContrato: fields.tipoContrato,
+    PercentualComissaoDefault: fields.percentualComissaoDefault || undefined,
+    Email: fields.email || undefined,
+    BranchId: fields.branchId || undefined,
+  })
+  return data
+}
+
+/** PUT /api/salas/{id} (Owner/Admin) — edição de cadastro. */
+export async function updateSala(id: string, fields: CreateSalaFields): Promise<Sala> {
+  const { data } = await apiClient.put<Sala>(`/api/salas/${id}`, {
+    Nome: fields.nome,
+    CapacidadeMaxima: fields.capacidadeMaxima || undefined,
+    BranchId: fields.branchId || undefined,
+  })
+  return data
+}

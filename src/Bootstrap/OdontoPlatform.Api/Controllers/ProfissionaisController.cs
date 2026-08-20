@@ -5,6 +5,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scheduling.Application.Commands.CreateProfissional;
+using Scheduling.Application.Commands.DeactivateProfissional;
+using Scheduling.Application.Commands.UpdateProfissional;
 using Scheduling.Application.Queries.ListProfissionais;
 using Scheduling.Contracts;
 using Scheduling.Domain.Enums;
@@ -78,7 +80,44 @@ public sealed class ProfissionaisController : ControllerBase
         var result = await _mediator.Send(new ListProfissionaisQuery(includeInactive), ct);
         return Ok(result.Value);
     }
+
+    /// <summary>Tela de Configurações — edita o cadastro. Não reenvia convite: Email aqui é só dado de contato/pareamento futuro.</summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Owner,Admin")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProfissionalRequest request, CancellationToken ct)
+    {
+        var organizationId = _currentUser.OrganizationId;
+        if (organizationId is null)
+            return Unauthorized(new { error = "Organization não resolvido a partir do token." });
+
+        var command = new UpdateProfissionalCommand(
+            id, organizationId.Value, request.Nome, request.Especialidade, request.TipoContrato,
+            request.PercentualComissaoDefault, request.Email, request.BranchId);
+        var result = await _mediator.Send(command, ct);
+
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error.Message });
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Owner,Admin")]
+    public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct)
+    {
+        var organizationId = _currentUser.OrganizationId;
+        if (organizationId is null)
+            return Unauthorized(new { error = "Organization não resolvido a partir do token." });
+
+        var result = await _mediator.Send(new DeactivateProfissionalCommand(id, organizationId.Value), ct);
+        return result.IsSuccess ? NoContent() : BadRequest(new { error = result.Error.Message });
+    }
 }
+
+public sealed record UpdateProfissionalRequest(
+    string Nome,
+    string Especialidade,
+    TipoContrato TipoContrato,
+    decimal? PercentualComissaoDefault,
+    string? Email,
+    Guid? BranchId);
 
 public sealed record CreateProfissionalRequest(
     string Nome,

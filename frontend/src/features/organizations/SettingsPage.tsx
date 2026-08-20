@@ -7,7 +7,7 @@ import { Building2, CreditCard, MapPin, Pencil, Stethoscope, DoorOpen } from 'lu
 import { getOrganization, listBranches, updateBranch, updateOrganization } from './api'
 import { listPlans, selectPlan } from '../subscriptions/api'
 import { PlanCards } from '../subscriptions/PlanCards'
-import { createProfissional, createSala, listProfissionais, listSalas } from '../scheduling/api'
+import { createProfissional, createSala, listProfissionais, listSalas, updateProfissional, updateSala } from '../scheduling/api'
 import { useMe } from '../auth/useMe'
 import { getApiErrorMessage } from '../../lib/query-client'
 import { toneClasses } from '../../lib/status-tone'
@@ -20,7 +20,7 @@ import { Select } from '../../components/ui/Select'
 import { Modal } from '../../components/ui/Modal'
 import type { BranchDetails } from '../../types/organizations'
 import type { PlanTier } from '../../types/subscriptions'
-import type { TipoContrato } from '../../types/scheduling'
+import type { Profissional, Sala, TipoContrato } from '../../types/scheduling'
 
 const TIPO_CONTRATO_LABELS: Record<TipoContrato, string> = { Clt: 'CLT', Pj: 'PJ', Autonomo: 'Autônomo' }
 
@@ -38,6 +38,21 @@ const branchSchema = z.object({
   telefone: z.string().optional(),
 })
 type BranchFormValues = z.infer<typeof branchSchema>
+
+const profissionalSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório').max(200, 'Nome não pode ter mais de 200 caracteres'),
+  especialidade: z.string().min(1, 'Especialidade é obrigatória').max(200, 'Especialidade não pode ter mais de 200 caracteres'),
+  tipoContrato: z.enum(['Clt', 'Pj', 'Autonomo']),
+  percentualComissaoDefault: z.string().optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+})
+type ProfissionalFormValues = z.infer<typeof profissionalSchema>
+
+const salaSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório').max(200, 'Nome não pode ter mais de 200 caracteres'),
+  capacidadeMaxima: z.string().optional(),
+})
+type SalaFormValues = z.infer<typeof salaSchema>
 
 /**
  * Seção "Empresa" — edita Nome/Cnpj/Telefone/Endereco da organização ativa. Era "fora de escopo"
@@ -185,6 +200,144 @@ function EditBranchModal({ branch, onClose }: { branch: BranchDetails; onClose: 
   )
 }
 
+/** Modal de edição de um profissional — aberto pelo botão "Editar" da lista em `ResourcesSection`.
+ * Não reenvia convite (Email aqui é só dado de contato/pareamento futuro, ver task 042). */
+function EditProfissionalModal({ profissional, onClose }: { profissional: Profissional; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProfissionalFormValues>({
+    resolver: zodResolver(profissionalSchema),
+    defaultValues: {
+      nome: profissional.nome,
+      especialidade: profissional.especialidade,
+      tipoContrato: profissional.tipoContrato,
+      percentualComissaoDefault: profissional.percentualComissaoDefault?.toString() ?? '',
+      email: profissional.email ?? '',
+    },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (values: ProfissionalFormValues) =>
+      updateProfissional(profissional.id, {
+        nome: values.nome,
+        especialidade: values.especialidade,
+        tipoContrato: values.tipoContrato,
+        percentualComissaoDefault: values.percentualComissaoDefault ? Number(values.percentualComissaoDefault) : undefined,
+        email: values.email || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profissionais'] })
+      onClose()
+    },
+    onError: (error) => setServerError(getApiErrorMessage(error)),
+  })
+
+  return (
+    <Modal open onClose={onClose} title={`Editar ${profissional.nome}`}>
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-4" noValidate>
+        <div>
+          <Label htmlFor="nomeProfissionalEdit">Nome completo</Label>
+          <Input id="nomeProfissionalEdit" error={errors.nome?.message} {...register('nome')} />
+        </div>
+        <div>
+          <Label htmlFor="especialidadeProfissionalEdit">Especialidade</Label>
+          <Input id="especialidadeProfissionalEdit" error={errors.especialidade?.message} {...register('especialidade')} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="tipoContratoProfissionalEdit">Tipo de contrato</Label>
+            <Select id="tipoContratoProfissionalEdit" {...register('tipoContrato')}>
+              {(Object.keys(TIPO_CONTRATO_LABELS) as TipoContrato[]).map((tc) => (
+                <option key={tc} value={tc}>
+                  {TIPO_CONTRATO_LABELS[tc]}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="comissaoProfissionalEdit">Comissão %</Label>
+            <Input id="comissaoProfissionalEdit" type="number" min={0} max={100} step="0.1" {...register('percentualComissaoDefault')} />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="emailProfissionalEdit">Email</Label>
+          <Input id="emailProfissionalEdit" type="email" error={errors.email?.message} {...register('email')} />
+        </div>
+
+        {serverError && <p className="text-sm text-danger">{serverError}</p>}
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+/** Modal de edição de uma sala — mesmo padrão de `EditProfissionalModal`. */
+function EditSalaModal({ sala, onClose }: { sala: Sala; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [serverError, setServerError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SalaFormValues>({
+    resolver: zodResolver(salaSchema),
+    defaultValues: { nome: sala.nome, capacidadeMaxima: sala.capacidadeMaxima?.toString() ?? '' },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (values: SalaFormValues) =>
+      updateSala(sala.id, {
+        nome: values.nome,
+        capacidadeMaxima: values.capacidadeMaxima ? Number(values.capacidadeMaxima) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['salas'] })
+      onClose()
+    },
+    onError: (error) => setServerError(getApiErrorMessage(error)),
+  })
+
+  return (
+    <Modal open onClose={onClose} title={`Editar ${sala.nome}`}>
+      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-4" noValidate>
+        <div>
+          <Label htmlFor="nomeSalaEdit">Nome da sala</Label>
+          <Input id="nomeSalaEdit" error={errors.nome?.message} {...register('nome')} />
+        </div>
+        <div>
+          <Label htmlFor="capacidadeSalaEdit">Capacidade máxima</Label>
+          <Input id="capacidadeSalaEdit" type="number" min={1} {...register('capacidadeMaxima')} />
+        </div>
+
+        {serverError && <p className="text-sm text-danger">{serverError}</p>}
+
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 /** Seção "Unidades" — lista as branches da organização, edição via modal (uma de cada vez). */
 function BranchesSection() {
   const [editing, setEditing] = useState<BranchDetails | null>(null)
@@ -230,12 +383,14 @@ function BranchesSection() {
  * Seção "Profissionais e Salas" — auditoria pré-venda (task 041): `POST /api/profissionais` e
  * `POST /api/salas` existiam no backend sem NENHUMA tela pra chamar. Sem isso, uma organização
  * nova nunca populava os selects de "Novo agendamento" e a Agenda — módulo #1 anunciado na
- * landing — ficava inutilizável no primeiro uso real. Mesmo padrão inline de `ConveniosCard`
- * (Financeiro): sem edição/remoção porque o backend também não expõe isso ainda pra estes dois
- * recursos.
+ * landing — ficava inutilizável no primeiro uso real. Edição via modal (task de melhoria
+ * seguinte) — mesmo padrão de `EditBranchModal`; sem remoção/desativação na UI ainda (endpoint
+ * existe no backend, mas desativar sem um jeito de reativar pela tela seria uma armadilha).
  */
 function ResourcesSection() {
   const queryClient = useQueryClient()
+  const [editingProfissional, setEditingProfissional] = useState<Profissional | null>(null)
+  const [editingSala, setEditingSala] = useState<Sala | null>(null)
   const [nomeProfissional, setNomeProfissional] = useState('')
   const [especialidade, setEspecialidade] = useState('')
   const [tipoContrato, setTipoContrato] = useState<TipoContrato>('Clt')
@@ -359,12 +514,17 @@ function ResourcesSection() {
                     {p.percentualComissaoDefault ? ` · ${p.percentualComissaoDefault}% comissão` : ''}
                   </p>
                 </div>
-                {/* Status de acesso — só faz sentido pra quem tem email cadastrado (task 042). */}
-                {p.userId ? (
-                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', toneClasses.success)}>Acesso ativo</span>
-                ) : p.email ? (
-                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', toneClasses.info)}>Aguardando registro</span>
-                ) : null}
+                <div className="flex shrink-0 items-center gap-2">
+                  {/* Status de acesso — só faz sentido pra quem tem email cadastrado (task 042). */}
+                  {p.userId ? (
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', toneClasses.success)}>Acesso ativo</span>
+                  ) : p.email ? (
+                    <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', toneClasses.info)}>Aguardando registro</span>
+                  ) : null}
+                  <Button variant="ghost" onClick={() => setEditingProfissional(p)} aria-label={`Editar ${p.nome}`}>
+                    <Pencil size={16} />
+                  </Button>
+                </div>
               </li>
             ))}
             {profissionais?.length === 0 && <li className="py-1.5 text-ink-muted">Nenhum profissional cadastrado.</li>}
@@ -395,14 +555,23 @@ function ResourcesSection() {
 
           <ul className="divide-y divide-border text-sm">
             {salas?.map((s) => (
-              <li key={s.id} className="py-1.5 text-ink">
-                {s.nome}
+              <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
+                <span className="text-ink">
+                  {s.nome}
+                  {s.capacidadeMaxima ? <span className="text-xs text-ink-muted"> · capacidade {s.capacidadeMaxima}</span> : null}
+                </span>
+                <Button variant="ghost" onClick={() => setEditingSala(s)} aria-label={`Editar ${s.nome}`}>
+                  <Pencil size={16} />
+                </Button>
               </li>
             ))}
             {salas?.length === 0 && <li className="py-1.5 text-ink-muted">Nenhuma sala cadastrada.</li>}
           </ul>
         </CardBody>
       </Card>
+
+      {editingProfissional && <EditProfissionalModal profissional={editingProfissional} onClose={() => setEditingProfissional(null)} />}
+      {editingSala && <EditSalaModal sala={editingSala} onClose={() => setEditingSala(null)} />}
     </div>
   )
 }

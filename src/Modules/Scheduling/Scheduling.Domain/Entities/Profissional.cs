@@ -94,6 +94,28 @@ public class Profissional : Entity, IMustHaveOrganization
         SetUpdatedAt();
     }
 
+    /// <summary>Edição de cadastro (tela de Configurações) — mesma validação de <see cref="Criar"/>.
+    /// Não mexe em <see cref="UserId"/>: o vínculo de acesso só muda via <c>VincularUsuario</c>
+    /// (aceite de convite), nunca por edição manual do cadastro.</summary>
+    public Result AtualizarDados(string nome, string especialidade, TipoContrato tipoContrato, decimal? percentualComissaoDefault, string? email, Guid? branchId)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+            return Result.Failure(DomainErrors.Profissional.NomeObrigatorio);
+
+        if (string.IsNullOrWhiteSpace(especialidade))
+            return Result.Failure(DomainErrors.Profissional.EspecialidadeObrigatoria);
+
+        Nome = nome.Trim();
+        Especialidade = especialidade.Trim();
+        TipoContrato = tipoContrato;
+        PercentualComissaoDefault = percentualComissaoDefault;
+        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+        BranchId = branchId;
+        SetUpdatedAt();
+
+        return Result.Success();
+    }
+
     /// <summary>
     /// Vincula o usuário de acesso correspondente — chamado quando o convite mandado pro
     /// <see cref="Email"/> deste profissional é aceito (task 042). Idempotente/defensivo: não

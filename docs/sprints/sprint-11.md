@@ -134,3 +134,12 @@ por `*.Contracts`" sem inventar uma porta cross-module só pra isso. Ao aceitar 
 docs/tasks/042-cadastro-dentista-com-convite.md. `dotnet test` completo: 372/372 passando.
 Validado ao vivo, fluxo completo: cadastro→convite→signup→aceite→link automático confirmado no
 browser.
+
+## Reabertura 9 (043) — editar Profissional e Sala
+
+Usuário pediu pra continuar trabalhando em melhorias/novas features. Achado ao revisar o que
+ficou pra trás nas tasks 041/042: cadastro de Profissional/Sala era create-only, sem conserto de
+digitação pela UI. `AtualizarDados` novo no domínio dos dois, endpoints `PUT`, modais de edição na
+tela de Configurações (mesmo padrão de `EditBranchModal`). Detalhes em
+docs/tasks/043-editar-profissional-sala.md. `dotnet test`: 380/380. Validado ao vivo (corrigiu um
+cadastro legado de tipo de contrato inválido pela própria tela).

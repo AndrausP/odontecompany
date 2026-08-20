@@ -50,4 +50,21 @@ public class Sala : Entity, IMustHaveOrganization
         Ativa = true;
         SetUpdatedAt();
     }
+
+    /// <summary>Edição de cadastro (tela de Configurações) — mesma validação de <see cref="Criar"/>.</summary>
+    public Result AtualizarDados(string nome, int? capacidadeMaxima, Guid? branchId)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+            return Result.Failure(DomainErrors.Sala.NomeObrigatorio);
+
+        if (capacidadeMaxima is <= 0)
+            return Result.Failure(DomainErrors.Sala.CapacidadeInvalida);
+
+        Nome = nome.Trim();
+        CapacidadeMaxima = capacidadeMaxima;
+        BranchId = branchId;
+        SetUpdatedAt();
+
+        return Result.Success();
+    }
 }

@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Modal } from '../../components/ui/Modal'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Label } from '../../components/ui/Label'
 import { StatusBadge } from '../../components/ui/StatusBadge'
-import { cancelarAgendamento, concluirAgendamento, confirmarAgendamento } from './api'
+import { cancelarAgendamento, concluirAgendamento, confirmarAgendamento, listProcedimentos } from './api'
 import { getApiErrorMessage } from '../../lib/query-client'
 import type { Agendamento } from '../../types/scheduling'
 
@@ -20,6 +20,17 @@ export function AgendamentoDetalheModal({ agendamento, onClose }: AgendamentoDet
   const [valor, setValor] = useState('')
   const [motivo, setMotivo] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
+
+  const { data: procedimentos } = useQuery({ queryKey: ['procedimentos'], queryFn: listProcedimentos, enabled: !!agendamento })
+  const procedimento = procedimentos?.find((p) => p.id === agendamento?.procedimentoId)
+
+  /** Reseta os campos e pré-preenche o valor com o padrão do procedimento (task 044) — o
+   * usuário ainda pode editar antes de concluir, isto é só um ponto de partida. */
+  useEffect(() => {
+    setMotivo('')
+    setActionError(null)
+    setValor(procedimento?.valorPadrao != null ? String(procedimento.valorPadrao) : '')
+  }, [agendamento?.id, procedimento?.valorPadrao])
 
   const invalidateAndClose = () => {
     queryClient.invalidateQueries({ queryKey: ['agendamentos'] })
@@ -65,6 +76,12 @@ export function AgendamentoDetalheModal({ agendamento, onClose }: AgendamentoDet
             <span className="text-ink-muted">Fim: </span>
             {format(new Date(agendamento.fim), "dd/MM/yyyy HH:mm")}
           </p>
+          {procedimento && (
+            <p>
+              <span className="text-ink-muted">Procedimento: </span>
+              {procedimento.nome}
+            </p>
+          )}
           {agendamento.motivoCancelamento && (
             <p>
               <span className="text-ink-muted">Motivo do cancelamento: </span>

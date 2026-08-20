@@ -14,7 +14,7 @@ import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { cn } from '../../lib/cn'
 import { useMe } from '../auth/useMe'
-import { listAgendamentos, listProfissionais } from './api'
+import { listAgendamentos, listProcedimentos, listProfissionais } from './api'
 import { listPatients } from '../patients/api'
 import { NovoAgendamentoModal } from './NovoAgendamentoModal'
 import { AgendamentoDetalheModal } from './AgendamentoDetalheModal'
@@ -30,19 +30,18 @@ interface EventExtendedProps {
   agendamento: Agendamento
   patientName: string
   statusLabel: string
+  procedimentoNome: string | null
 }
 
-/** Chip do evento — nome do paciente (existe no domínio) + status (existe e já é o que colore o
- * evento hoje). Sem procedimento: `Agendamento` não tem esse campo (divergência #2 registrada na
- * task 031/docs/decisions.md). */
+/** Chip do evento — nome do paciente + status + procedimento (opcional, task 044). */
 function renderEventContent(arg: EventContentArg) {
-  const { agendamento, patientName, statusLabel } = arg.event.extendedProps as EventExtendedProps
+  const { agendamento, patientName, statusLabel, procedimentoNome } = arg.event.extendedProps as EventExtendedProps
   return (
     <div className="min-w-0 px-0.5 py-0.5">
       <p className="truncate text-xs font-semibold">{patientName}</p>
       <p className="flex items-center gap-1 truncate text-[11px] opacity-90">
         <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', statusDotClasses[agendamento.status])} aria-hidden="true" />
-        {statusLabel}
+        {procedimentoNome ? `${statusLabel} · ${procedimentoNome}` : statusLabel}
       </p>
     </div>
   )
@@ -78,11 +77,17 @@ export function AgendaPage() {
     queryKey: ['patients', 'select'],
     queryFn: () => listPatients({ pageSize: 200 }),
   })
+  const { data: procedimentos } = useQuery({ queryKey: ['procedimentos'], queryFn: listProcedimentos })
 
   const patientName = useMemo(() => {
     const map = new Map((pacientesPage?.items ?? []).map((p) => [p.id, p.nomeCompleto]))
     return (pacienteId: string) => map.get(pacienteId) ?? 'Paciente'
   }, [pacientesPage])
+
+  const procedimentoName = useMemo(() => {
+    const map = new Map((procedimentos ?? []).map((p) => [p.id, p.nome]))
+    return (procedimentoId: string | null) => (procedimentoId ? (map.get(procedimentoId) ?? null) : null)
+  }, [procedimentos])
 
   // Memoizado: `data?.items ?? []` cria array novo a cada render, o que invalidaria os `useMemo`
   // abaixo (daysWithEvents/filteredAgendamentos) toda vez sem necessidade — sinalizado pelo oxlint.
@@ -132,9 +137,10 @@ export function AgendaPage() {
           agendamento: a,
           patientName: patientName(a.pacienteId),
           statusLabel: statusLabels[a.status],
+          procedimentoNome: procedimentoName(a.procedimentoId),
         } satisfies EventExtendedProps,
       })),
-    [filteredAgendamentos, patientName],
+    [filteredAgendamentos, patientName, procedimentoName],
   )
 
   const goToDate = (date: Date) => {

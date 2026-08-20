@@ -19,7 +19,9 @@ public sealed class DeactivateBranchCommandHandler : IRequestHandler<DeactivateB
     public async Task<Result> Handle(DeactivateBranchCommand request, CancellationToken cancellationToken)
     {
         var branch = await _branchRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (branch is null)
+        // Mesmo retorno pra branch inexistente E pra branch de outra organization (task 040) —
+        // não diferenciar os dois evita confirmar pra quem tenta o IDOR que aquele guid existe.
+        if (branch is null || branch.OrganizationId != request.OrganizationId)
             return Result.Failure(DomainErrors.Branch.NaoEncontrada);
 
         branch.Desativar();

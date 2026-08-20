@@ -23,6 +23,11 @@ public sealed class OrganizationMembershipRepository : IOrganizationMembershipRe
             .IgnoreQueryFilters() // mesmo motivo do método acima
             .FirstOrDefaultAsync(m => m.UserId == userId && m.OrganizationId == organizationId, ct);
 
+    public Task<int> CountActiveByOrganizationAcrossOrganizationsAsync(Guid organizationId, CancellationToken ct = default)
+        => _context.OrganizationMemberships
+            .IgnoreQueryFilters() // mesmo motivo dos outros métodos "AcrossOrganizations" deste repositório
+            .CountAsync(m => m.OrganizationId == organizationId && m.Status == MembershipStatus.Ativo, ct);
+
     public async Task AddAsync(OrganizationMembership membership, CancellationToken ct = default)
         => await _context.OrganizationMemberships.AddAsync(membership, ct);
 }

@@ -38,12 +38,15 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IInviteRepository, InviteRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
 
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IRefreshTokenGenerator, Sha256RefreshTokenGenerator>();
         services.AddSingleton<IInviteTokenGenerator, Sha256InviteTokenGenerator>();
         services.AddSingleton<IInviteNotifier, LoggingInviteNotifier>();
+        services.AddSingleton<IPasswordResetTokenGenerator, Sha256PasswordResetTokenGenerator>();
+        services.AddSingleton<IPasswordResetNotifier, LoggingPasswordResetNotifier>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         return services;

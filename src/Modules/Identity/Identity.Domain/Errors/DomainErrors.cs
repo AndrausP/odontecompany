@@ -22,6 +22,9 @@ public static class DomainErrors
         public static readonly Error OrganizationInvalido = new("Membership.OrganizationInvalido", "Organization inválido.");
         public static readonly Error UserInvalido = new("Membership.UserInvalido", "Usuário inválido.");
         public static readonly Error NaoEncontrada = new("Membership.NaoEncontrada", "Afiliação inexistente ou inativa para esta organization.");
+        public static readonly Error LimiteDoPlanoAtingido = new(
+            "Membership.LimiteDoPlanoAtingido",
+            "O plano atual não permite mais usuários. Peça pro Owner fazer upgrade pra continuar.");
     }
 
     public static class RefreshTokenErrors
@@ -51,5 +54,14 @@ public static class DomainErrors
         /// <summary>Mensagem genérica de propósito: nunca distingue "não existe" de "expirado"/"já usado"/"email não bate" — anti-enumeração.</summary>
         public static readonly Error NaoEncontrado = new("Invite.NaoEncontrado", "Convite inválido ou expirado.");
         public static readonly Error EmailJaMembro = new("Invite.EmailJaMembro", "Email já é membro desta organization.");
+    }
+
+    /// <summary>Erros de <see cref="Entities.PasswordResetToken"/> — recuperação de senha (auditoria pré-venda).</summary>
+    public static class PasswordReset
+    {
+        public static readonly Error UserInvalido = new("PasswordReset.UserInvalido", "Usuário inválido.");
+
+        /// <summary>Mesma regra do Invite.NaoEncontrado: nunca distingue "não existe" de "expirado"/"já usado" — anti-enumeração.</summary>
+        public static readonly Error TokenInvalido = new("PasswordReset.TokenInvalido", "Link de redefinição inválido ou expirado.");
     }
 }

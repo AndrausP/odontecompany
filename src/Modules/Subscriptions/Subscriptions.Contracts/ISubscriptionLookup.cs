@@ -12,4 +12,7 @@ public interface ISubscriptionLookup
 
     /// <summary>Quantas filiais (Branch) o plano ativo da organização permite. 0 se não tem plano ativo — quem chama decide o que fazer (bloquear criação).</summary>
     Task<int> LimiteDeFiliaisAsync(Guid organizationId, CancellationToken ct = default);
+
+    /// <summary>Quantos usuários (memberships ativas) o plano ativo da organização permite. 0 se não tem plano ativo — mesmo raciocínio de <see cref="LimiteDeFiliaisAsync"/> (auditoria pré-venda).</summary>
+    Task<int> LimiteDeUsuariosAsync(Guid organizationId, CancellationToken ct = default);
 }

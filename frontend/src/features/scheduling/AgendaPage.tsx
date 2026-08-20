@@ -184,6 +184,17 @@ export function AgendaPage() {
         </div>
       </div>
 
+      {/* Auditoria pré-venda — grade da semana em branco não dava nenhuma pista de por onde
+          começar. Só aparece na primeira visita real (organização sem NENHUM agendamento ainda),
+          some assim que o primeiro é criado — não é um "dica permanente" incomodando depois. */}
+      {!isLoading && !isError && agendamentos.length === 0 && (
+        <div className="rounded-lg border border-brand/30 bg-brand-subtle/40 px-4 py-3 text-sm text-ink-secondary">
+          Nenhum agendamento ainda. Clique em <strong className="text-ink">+ Novo agendamento</strong> pra
+          marcar o primeiro — você vai precisar de um paciente e um profissional cadastrados (cadastra em{' '}
+          <strong className="text-ink">Pacientes</strong> e em <strong className="text-ink">Configurações → Profissionais</strong>).
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px] lg:items-start">
         <Card>
           <CardHeader className="flex items-center justify-between">

@@ -4,6 +4,7 @@ using Identity.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Scheduling.Application.Commands.LinkProfissionalUser;
 
 namespace OdontoPlatform.Api.Controllers;
 
@@ -45,6 +46,11 @@ public sealed class InvitesController : ControllerBase
     /// token escopado à organization recém-afiliada (ver <c>AcceptInviteResultDto</c>).
     /// Qualquer falha (token inexistente/expirado/já usado/email não bate) responde <c>404</c>
     /// genérico — anti-enumeração.
+    ///
+    /// Task 042 — depois de aceitar com sucesso, tenta vincular o usuário a qualquer profissional
+    /// pendente (Scheduling) com este email — composição no nível do controller, best-effort:
+    /// nunca falha o aceite do convite por causa disso (a esmagadora maioria dos convites não é
+    /// de dentista com profissional pré-cadastrado esperando).
     /// </summary>
     [HttpPost("invites/{token}/accept")]
     public async Task<IActionResult> Accept(string token, CancellationToken ct)
@@ -54,6 +60,11 @@ public sealed class InvitesController : ControllerBase
             return Unauthorized();
 
         var result = await _mediator.Send(new AcceptInviteCommand(userId.Value, token), ct);
-        return result.IsSuccess ? Ok(result.Value) : NotFound(new { error = result.Error.Message });
+        if (!result.IsSuccess)
+            return NotFound(new { error = result.Error.Message });
+
+        await _mediator.Send(new LinkProfissionalUserCommand(result.Value.OrganizationId, result.Value.Email, userId.Value), ct);
+
+        return Ok(result.Value);
     }
 }

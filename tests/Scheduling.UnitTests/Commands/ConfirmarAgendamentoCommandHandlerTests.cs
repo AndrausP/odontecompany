@@ -3,6 +3,7 @@ using Scheduling.Application.Commands.ConfirmarAgendamento;
 using Scheduling.Application.Exceptions;
 using Scheduling.Application.Interfaces;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 
 namespace Scheduling.UnitTests.Commands;
 
@@ -149,7 +150,7 @@ public class ConfirmarAgendamentoCommandHandlerTests
 
         _agendamentoRepository.Setup(r => r.GetByIdAsync(agendamento.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agendamento);
         _profissionalRepository.Setup(r => r.GetByIdAsync(agendamento.ProfissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", donoDaAgenda).Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt, userId: donoDaAgenda).Value);
 
         var result = await _handler.Handle(new ConfirmarAgendamentoCommand(agendamento.Id, outroDentista, "Dentista"), CancellationToken.None);
 
@@ -167,7 +168,7 @@ public class ConfirmarAgendamentoCommandHandlerTests
 
         _agendamentoRepository.Setup(r => r.GetByIdAsync(agendamento.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agendamento);
         _profissionalRepository.Setup(r => r.GetByIdAsync(agendamento.ProfissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", dentistaUserId).Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt, userId: dentistaUserId).Value);
         _agendamentoRepository.Setup(r => r.ExisteSobreposicaoAsync(
                 agendamento.ProfissionalId, ValidInicio, ValidFim, agendamento.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);

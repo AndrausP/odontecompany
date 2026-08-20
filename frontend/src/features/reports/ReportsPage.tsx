@@ -140,6 +140,16 @@ export function ReportsPage() {
       {anyLoading && <p className="text-sm text-ink-muted">Carregando…</p>}
       {anyError && <p className="text-sm text-danger">{getApiErrorMessage(anyError)}</p>}
 
+      {/* Auditoria pré-venda — dashboard todo zerado sem explicação parecia quebrado no primeiro
+          acesso. Só aparece quando não há paciente NEM agendamento nenhum no período (proxy de
+          "organização ainda não usou o sistema de verdade" — some assim que o 1º dado existir). */}
+      {dashboard.data && dashboard.data.pacientesAtivos === 0 && dashboard.data.totalAgendamentos === 0 && (
+        <div className="rounded-lg border border-brand/30 bg-brand-subtle/40 px-4 py-3 text-sm text-ink-secondary">
+          Ainda sem dados neste período — os números abaixo enchem conforme você cadastra pacientes
+          e cria agendamentos.
+        </div>
+      )}
+
       {dashboard.data && (
         <Card>
           <CardHeader>

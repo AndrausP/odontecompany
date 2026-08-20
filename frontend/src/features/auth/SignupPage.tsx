@@ -106,6 +106,20 @@ export function SignupPage() {
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending ? 'Criando conta…' : 'Criar conta'}
           </Button>
+
+          {/* Auditoria pré-venda: cadastro não tinha nenhum link de Termos/Privacidade — as
+              páginas agora existem (features/marketing/LegalPages.tsx), isso é o link. */}
+          <p className="text-center text-xs text-ink-muted">
+            Ao criar conta, você concorda com nossos{' '}
+            <Link to="/termos" className="text-brand hover:text-brand-hover">
+              Termos de Uso
+            </Link>{' '}
+            e nossa{' '}
+            <Link to="/privacidade" className="text-brand hover:text-brand-hover">
+              Política de Privacidade
+            </Link>
+            .
+          </p>
         </form>
 
         <p className="mt-4 text-center text-sm text-ink-muted">

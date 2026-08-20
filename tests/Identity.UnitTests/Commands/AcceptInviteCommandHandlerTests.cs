@@ -3,6 +3,7 @@ using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
 using Moq;
+using Subscriptions.Contracts;
 
 namespace Identity.UnitTests.Commands;
 
@@ -17,6 +18,7 @@ public class AcceptInviteCommandHandlerTests
     private Mock<IOrganizationMembershipRepository> _membershipRepository;
     private Mock<IInviteRepository> _inviteRepository;
     private Mock<IInviteTokenGenerator> _inviteTokenGenerator;
+    private Mock<ISubscriptionLookup> _subscriptionLookup;
     private Mock<IUnitOfWork> _unitOfWork;
     private AcceptInviteCommandHandler _handler;
 
@@ -27,15 +29,25 @@ public class AcceptInviteCommandHandlerTests
         _membershipRepository = new Mock<IOrganizationMembershipRepository>();
         _inviteRepository = new Mock<IInviteRepository>();
         _inviteTokenGenerator = new Mock<IInviteTokenGenerator>();
+        _subscriptionLookup = new Mock<ISubscriptionLookup>();
         _unitOfWork = new Mock<IUnitOfWork>();
 
         _inviteTokenGenerator.Setup(g => g.Hash("token-plano")).Returns("token-hash");
+
+        // Plano com folga (limite 3, 0 usuários ativos) — mesmo padrão de mock permissivo de
+        // CreateBranchCommandHandlerTests: testes focam no comportamento do handler, não no gate
+        // de plano (esse tem teste próprio abaixo).
+        _subscriptionLookup.Setup(s => s.LimiteDeUsuariosAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(3);
+        _membershipRepository
+            .Setup(r => r.CountActiveByOrganizationAcrossOrganizationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
 
         _handler = new AcceptInviteCommandHandler(
             _userRepository.Object,
             _membershipRepository.Object,
             _inviteRepository.Object,
             _inviteTokenGenerator.Object,
+            _subscriptionLookup.Object,
             _unitOfWork.Object);
     }
 
@@ -209,5 +221,31 @@ public class AcceptInviteCommandHandlerTests
         Assert.That(invite.Status, Is.EqualTo(InviteStatus.Aceito));
         _membershipRepository.Verify(r => r.AddAsync(It.IsAny<OrganizationMembership>(), It.IsAny<CancellationToken>()), Times.Never, "reativa a existente, não cria uma nova (quebraria o índice único)");
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>Auditoria pré-venda — limite de usuário por plano. Testa o caminho "membership nova"; a idempotência (já ativo) não conta contra o limite, testado separadamente.</summary>
+    [Test]
+    public async Task Should_ReturnLimiteDoPlanoAtingido_When_ActiveUserCountAlreadyMeetsPlanLimit()
+    {
+        var organizationId = Guid.NewGuid();
+        var invite = BuildPendingInvite(organizationId);
+        var user = User.Create("Convidado", "convidado@clinica.com", "hash").Value;
+
+        _inviteRepository.Setup(r => r.GetByTokenHashAcrossOrganizationsAsync("token-hash", It.IsAny<CancellationToken>())).ReturnsAsync(invite);
+        _userRepository.Setup(r => r.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _membershipRepository
+            .Setup(r => r.GetByUserAndOrganizationAcrossOrganizationsAsync(user.Id, organizationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrganizationMembership?)null);
+        _subscriptionLookup.Setup(s => s.LimiteDeUsuariosAsync(organizationId, It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _membershipRepository
+            .Setup(r => r.CountActiveByOrganizationAcrossOrganizationsAsync(organizationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var result = await _handler.Handle(new AcceptInviteCommand(user.Id, "token-plano"), CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error.Code, Is.EqualTo("Membership.LimiteDoPlanoAtingido"));
+        _membershipRepository.Verify(r => r.AddAsync(It.IsAny<OrganizationMembership>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

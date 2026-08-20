@@ -3,6 +3,7 @@ using Patients.Contracts;
 using Scheduling.Application.Commands.CreateAgendamento;
 using Scheduling.Application.Interfaces;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 
 namespace Scheduling.UnitTests.Commands;
 
@@ -58,7 +59,7 @@ public class CreateAgendamentoCommandHandlerTests
     {
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _profissionalRepository.Setup(r => r.GetByIdAsync(profissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value);
         _salaRepository.Setup(r => r.GetByIdAsync(salaId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Sala.Criar(Guid.NewGuid(), "Sala 1").Value);
         _agendamentoRepository.Setup(r => r.ExisteSobreposicaoAsync(profissionalId, ValidInicio, ValidFim, null, It.IsAny<CancellationToken>()))
@@ -111,7 +112,7 @@ public class CreateAgendamentoCommandHandlerTests
     public async Task Should_ReturnFailure_When_ProfissionalIsInativo()
     {
         var profissionalId = Guid.NewGuid();
-        var profissionalInativo = Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value;
+        var profissionalInativo = Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value;
         profissionalInativo.Desativar();
 
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -129,7 +130,7 @@ public class CreateAgendamentoCommandHandlerTests
         var profissionalId = Guid.NewGuid();
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _profissionalRepository.Setup(r => r.GetByIdAsync(profissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value);
         _salaRepository.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Sala?)null);
 
         var result = await _handler.Handle(ValidCommand(profissionalId: profissionalId), CancellationToken.None);
@@ -147,7 +148,7 @@ public class CreateAgendamentoCommandHandlerTests
 
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _profissionalRepository.Setup(r => r.GetByIdAsync(profissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value);
         _salaRepository.Setup(r => r.GetByIdAsync(salaId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Sala.Criar(Guid.NewGuid(), "Sala 1").Value);
         _agendamentoRepository.Setup(r => r.ExisteSobreposicaoAsync(profissionalId, ValidInicio, ValidFim, null, It.IsAny<CancellationToken>()))
@@ -186,7 +187,7 @@ public class CreateAgendamentoCommandHandlerTests
         var salaId = Guid.NewGuid();
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _profissionalRepository.Setup(r => r.GetByIdAsync(profissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value);
         _salaRepository.Setup(r => r.GetByIdAsync(salaId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Sala.Criar(Guid.NewGuid(), "Sala 1").Value);
         _lockService.Setup(l => l.AcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
@@ -208,7 +209,7 @@ public class CreateAgendamentoCommandHandlerTests
         var salaId = Guid.NewGuid();
         _patientLookup.Setup(p => p.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _profissionalRepository.Setup(r => r.GetByIdAsync(profissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia").Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt).Value);
         _salaRepository.Setup(r => r.GetByIdAsync(salaId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Sala.Criar(Guid.NewGuid(), "Sala 1").Value);
         // Simula outra requisição que venceu a corrida e já persistiu um agendamento sobreposto

@@ -93,3 +93,44 @@ escolhe um plano no onboarding (sem cobrança real ainda), sem plano = mesmo blo
 organização. Onboarding virou 3 passos (Empresa→Plano→Unidade). 2 bugs de state real encontrados
 e corrigidos testando ao vivo — detalhes em docs/knowledge/errors-aprendidos.md e
 docs/tasks/039-sistema-planos-onboarding-completo.md. `dotnet test` completo: 341/341 passando.
+
+## Reabertura 5 (040) — tela de configurações + módulos + paleta verde+preto
+
+Usuário pediu a tela de configurações que a 039 tinha deixado como "fora de escopo... item
+futuro" (editar Empresa/Unidade depois de criados) + plano ativo/trocar plano no mesmo lugar,
+"melhorar os módulos" (cards de plano + itens de nav) e trocar a paleta dark de teal-ciano/roxo/
+azul pra verde+preto puro (light já era verde+branco). Grill-me (3 perguntas) fechou as 3
+ambiguidades antes de implementar. Detalhes em docs/tasks/040-tela-configuracoes-paleta-verde-preto.md.
+`dotnet test` completo: 349/349 passando (+8 novos).
+
+## Reabertura 6 (040, 2 fixes de IDOR) — `PUT`/`DELETE /api/branches/{id}` fecham gap de IDOR
+
+Usuário pediu, em duas mensagens seguidas, pra fechar o gap de IDOR documentado como risco aceito
+na 040: primeiro `PUT` (edição), depois `DELETE` (desativação) — mesmo tratamento nos dois
+(`OrganizationId` do token, nunca da rota; `Branch.NaoEncontrada` idêntico pra branch inexistente
+OU de outra organização). `dotnet test`: 353/353 (+3 testes).
+
+## Reabertura 7 (041) — auditoria pré-venda: 8 achados fechados
+
+Sessão pediu validação de "prontidão pra vender" — achado como Artifact (2 bloqueadores: sem
+cadastro de Profissional/Sala trava a Agenda inteira; nenhum plano cobra de verdade). Usuário pediu
+"separa as sprints e executa todas". Decisão de negócio antes de começar: cobrança manual por fora
+(sem chave Stripe disponível), viraria integração real numa rodada futura. 8 itens fechados —
+detalhes completos em docs/tasks/041-remediacao-auditoria-pre-venda.md. Achado lateral relevante:
+o gate de limite de usuário por plano quebrou 3 testes de integração que criavam organization sem
+nunca escolher plano — corrigido na fixture de teste (`AuthFlow.SelectPlanAsync`), não no gate
+(comportamento correto, teste que não refletia o funil real). `dotnet test` completo: 364/364
+passando (módulo `Subscriptions.UnitTests` criado do zero).
+
+## Reabertura 8 (042) — cadastro de dentista com convite opcional
+
+Usuário pediu: cadastro de profissional com nome/sobrenome, tipo de contrato, comissão opcional e
+email — se informar email, manda convite pro dentista se auto-registrar; sem email, o dentista
+continua usável na Agenda como recurso puro. Decisão de arquitetura central: orquestração dos dois
+módulos (Scheduling cria o profissional, Identity cria/aceita o convite) mora nos CONTROLLERS
+(Bootstrap), não em um módulo chamando o `IMediator` do outro — preserva a regra "comunicação só
+por `*.Contracts`" sem inventar uma porta cross-module só pra isso. Ao aceitar o convite, o usuário
+é vinculado automaticamente de volta ao profissional que esperava aquele email. Detalhes em
+docs/tasks/042-cadastro-dentista-com-convite.md. `dotnet test` completo: 372/372 passando.
+Validado ao vivo, fluxo completo: cadastro→convite→signup→aceite→link automático confirmado no
+browser.

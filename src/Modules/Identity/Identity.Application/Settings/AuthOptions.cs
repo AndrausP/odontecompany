@@ -14,6 +14,10 @@ public sealed class AuthOptions
     /// <summary>Validade padrão de um convite de afiliação (task 016) — configurável, default 7 dias.</summary>
     public int InviteExpirationDays { get; init; } = 7;
 
+    /// <summary>Validade do link de redefinição de senha — curto de propósito (é um bypass de
+    /// autenticação temporário), default 2 horas.</summary>
+    public int PasswordResetExpirationHours { get; init; } = 2;
+
     public string DefaultOrganizationName { get; init; } = "Clínica Demo";
     public string DefaultAdminNome { get; init; } = "Administrador";
     public string DefaultAdminEmail { get; init; } = "admin@clinicademo.local";

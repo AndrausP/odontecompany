@@ -790,3 +790,80 @@ entrar" quanto o guard de "já terminei".
 se escolher o plano vai pro passo "unidade" ou direto pro app; o guard de topo
 `if (step === null && data.organizations.length > 0 && data.activePlanTier)` só atalha em chegada
 fria, nunca no meio de uma transição de `step` já em andamento.
+
+## Card de plano compartilhado entre onboarding e configurações (task 040)
+
+`features/subscriptions/PlanCards.tsx` recebe `plans` (catálogo) + `activeTier?` (opcional) +
+`onSelect`. Sem `activeTier` (onboarding, `SelectPlanStep`), todo card mostra "Escolher". Com
+`activeTier` (tela de configurações), o card cujo `tier` bate ganha badge "Plano atual" e o botão
+vira desabilitado — mesmo componente, dois contextos, sem duplicar o grid nem os bullets de
+benefício.
+**Quando usar:** Qualquer lista de opções (planos, templates, tiers) que aparece tanto num fluxo
+de "escolher pela primeira vez" quanto num fluxo de "ver o que já está escolhido e trocar" — evita
+o mesmo risco de drift já registrado pro par `StatusBadge`/`FaturaStatusBadge` (sprint-8).
+
+## Chip de ícone nos itens de nav da sidebar (task 040)
+
+`NavItemLink` (`AppLayout.tsx`) envolve o ícone do lucide-react num `<span>` de fundo arredondado
+(`bg-surface-sunken` inativo, `bg-on-brand/15` ativo) em vez de deixar o ícone solto ao lado do
+texto — dá cara de "módulo" ao item (pedido do usuário), mesma lógica de inversão de cor que já
+existia no badge de contagem de Convites (item ativo sólido → conteúdo interno precisa inverter,
+senão fica invisível).
+
+## Recurso de negócio (backend) sem tela — audita antes de assumir "pronto" (task 041)
+
+`ProfissionaisController`/`SalasController` (Scheduling) tinham `POST`/`GET` completos e
+funcionando desde tasks anteriores, mas nenhuma tela em `frontend/src/features/scheduling/` os
+chamava — só `NovoAgendamentoModal` os LIA, nunca escreveu. Um módulo "pronto" no backend não
+significa usável: sempre confirmar que toda entidade que o fluxo principal depende (aqui: Agenda
+depende de Profissional+Sala existirem) tem caminho de criação na UI, não só de leitura.
+**Quando usar:** Ao auditar prontidão de um módulo/produto pra uso real, listar toda entidade que
+um fluxo crítico referencia (FK, select, dropdown) e confirmar que cada uma tem tela de CRIAÇÃO,
+não só o fluxo que a consome.
+
+## Token opaco de uso único (convite/reset de senha) — mesmo esqueleto, 3 implementações (task 041)
+
+`RefreshToken`/`Invite`/`PasswordResetToken` seguem o MESMO desenho: entidade guarda só o hash
+(SHA-256, não Argon2 — não é senha escolhida por humano), gerador dedicado por conceito
+(`IRefreshTokenGenerator`/`IInviteTokenGenerator`/`IPasswordResetTokenGenerator` — classes
+separadas mesmo com implementação de baixo nível idêntica, é conceito de domínio diferente),
+notificação via porta com implementação `Logging*` NO-OP até existir provider de email real, e erro
+único genérico na validação (`Invite.NaoEncontrado`/`PasswordReset.TokenInvalido`) que NUNCA
+distingue "não existe" de "expirado"/"já usado" — anti-enumeração.
+**Quando usar:** Qualquer novo fluxo de "link de uso único enviado por fora" (convite, reset de
+senha, confirmação de email, etc.) — copiar este desenho em vez de inventar um novo.
+
+## Limite de plano checado no momento em que o recurso realmente ocupa a vaga (task 041)
+
+Limite de filial é checado em `CreateBranchCommandHandler` (momento em que a Branch é criada).
+Limite de usuário é checado em `AcceptInviteCommandHandler` (momento em que a Membership é criada
+— NÃO em `CreateInviteCommandHandler`, porque o convite pendente não ocupa vaga nenhuma; checar lá
+deixaria passar N convites pendentes que todos vão ocupar vaga quando aceitos depois).
+**Quando usar:** Ao adicionar um novo limite de plano, achar o Handler onde a ENTIDADE que conta
+pro limite é de fato criada/reativada — não o Handler que só inicia um processo assíncrono
+(convite, solicitação, reserva) que pode nunca se concretizar.
+
+## Composição entre módulos mora no controller (Bootstrap), não em Application chamando Application (task 042)
+
+Cadastrar um Profissional (Scheduling) + convidar um Dentista (Identity) na mesma requisição
+parecia pedir uma nova porta cross-module (tipo `IInviteIssuer` em `Identity.Contracts`). Em vez
+disso, o `ProfissionaisController.Create` (Bootstrap) chama os dois `IRequest`s em sequência —
+`CreateProfissionalCommand` primeiro, `CreateInviteCommand` depois se `Email` veio. Mesma lógica no
+outro sentido: `InvitesController.Accept` chama `AcceptInviteCommand` e depois
+`LinkProfissionalUserCommand`. Nenhum dos dois `Application` layers passa a conhecer o outro.
+**Quando usar:** Sempre que uma ação do usuário precisar tocar 2 módulos e a alternativa fosse
+criar uma porta cross-module só pra aquele fluxo — se a orquestração é "faça A, depois faça B"
+(sem lógica de negócio nova, só sequenciamento), ela pertence ao controller. Reservar porta
+cross-module (`*.Contracts`) pra quando um módulo precisa CONSULTAR ou DECIDIR com base em dado de
+outro dentro do próprio Handler (ex.: limite de plano, validação de Branch) — isso sim é
+Application chamando Contracts, não controller orquestrando.
+
+## Recurso "convidável" — a entidade sempre existe, o login é opcional por cima (task 042)
+
+`Profissional` nunca depende de ter usuário — sempre foi assim (recurso puro da Agenda). O convite
+(quando o email é informado) é estritamente ADITIVO: só cria a possibilidade de login, nunca é
+pré-requisito. `VincularUsuario` só roda em best-effort, depois do fato consumado (convite
+aceito) — nunca bloqueia nem o cadastro do recurso, nem o aceite do convite.
+**Quando usar:** Qualquer entidade de "pessoa que trabalha na clínica mas pode ou não ter login"
+(recepcionista sem sistema próprio, técnico, etc.) — mesmo desenho: recurso primeiro, acesso
+depois, opcional, nunca no caminho crítico um do outro.

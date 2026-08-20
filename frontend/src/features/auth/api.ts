@@ -45,3 +45,16 @@ export async function switchOrganization(organizationId: string): Promise<LoginR
   })
   return data
 }
+
+/**
+ * POST /api/auth/forgot-password (auditoria pré-venda) — sempre 200, exista ou não o email
+ * (anti-enumeração, mesmo raciocínio do backend). Rate limit 5/min por IP.
+ */
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post('/api/auth/forgot-password', { Email: email })
+}
+
+/** POST /api/auth/reset-password — token vem da URL (`?token=`), gerado por `forgotPassword`. */
+export async function resetPassword(token: string, novaSenha: string): Promise<void> {
+  await apiClient.post('/api/auth/reset-password', { Token: token, NovaSenha: novaSenha })
+}

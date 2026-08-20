@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   Package,
   Receipt,
+  Settings,
   Sun,
   Users,
   Wallet,
@@ -64,6 +65,10 @@ const navGroups: NavGroup[] = [
       { to: '/relatorios', label: 'Relatórios', icon: BarChart3, roles: ['Owner', 'Admin'] },
       { to: '/comprovante', label: 'Comprovante de Pagamento', icon: Receipt, roles: ['Owner', 'Admin', 'Dentista'] },
     ],
+  },
+  {
+    label: 'Sistema',
+    items: [{ to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['Owner', 'Admin'] }],
   },
 ]
 
@@ -172,17 +177,30 @@ function NavItemLink({ item, collapsed, onNavigate }: { item: NavItem; collapsed
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
           focusRing,
-          collapsed && 'justify-center',
+          collapsed && 'justify-center px-0',
           // sólido (não mais bg-brand-subtle) — task 032, pedido do usuário pra bater com a foto
           // de referência (pill de item ativo cheio, não pálido)
           isActive ? 'bg-brand text-on-brand' : 'text-ink-secondary hover:bg-surface-sunken hover:text-ink',
         )
       }
     >
-      <Icon size={16} className="shrink-0" />
-      {!collapsed && <span>{item.label}</span>}
+      {({ isActive }) => (
+        <>
+          {/* Chip do ícone — pedido do usuário pra dar cara de "módulo" ao item de nav, não só
+              texto+ícone soltos. Invertido quando ativo (mesma lógica do badge de Convites). */}
+          <span
+            className={cn(
+              'flex size-6 shrink-0 items-center justify-center rounded-md',
+              isActive ? 'bg-on-brand/15' : 'bg-surface-sunken',
+            )}
+          >
+            <Icon size={14} className="shrink-0" />
+          </span>
+          {!collapsed && <span>{item.label}</span>}
+        </>
+      )}
     </NavLink>
   )
 }

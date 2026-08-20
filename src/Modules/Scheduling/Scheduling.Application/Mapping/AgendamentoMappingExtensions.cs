@@ -20,7 +20,15 @@ public static class AgendamentoMappingExtensions
         agendamento.UpdatedAt);
 
     public static ProfissionalDto ToDto(this Profissional profissional) => new(
-        profissional.Id, profissional.Nome, profissional.Especialidade, profissional.UserId, profissional.BranchId, profissional.Ativo);
+        profissional.Id,
+        profissional.Nome,
+        profissional.Especialidade,
+        profissional.TipoContrato.ToString(),
+        profissional.PercentualComissaoDefault,
+        profissional.Email,
+        profissional.UserId,
+        profissional.BranchId,
+        profissional.Ativo);
 
     public static SalaDto ToDto(this Sala sala) => new(
         sala.Id, sala.Nome, sala.CapacidadeMaxima, sala.BranchId, sala.Ativa);

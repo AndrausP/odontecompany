@@ -43,4 +43,20 @@ public class Organization : AggregateRoot
         Ativo = false;
         SetUpdatedAt();
     }
+
+    /// <summary>Tela de configurações (item futuro anunciado na task 039, implementado aqui) — edita
+    /// os mesmos campos opcionais que a criação aceita. Mesma validação de <see cref="Create"/>.</summary>
+    public Result AtualizarDados(string nome, string? cnpj, string? telefone, string? endereco)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+            return Result.Failure(DomainErrors.Organization.NomeObrigatorio);
+
+        Nome = nome.Trim();
+        Cnpj = string.IsNullOrWhiteSpace(cnpj) ? null : cnpj.Trim();
+        Telefone = string.IsNullOrWhiteSpace(telefone) ? null : telefone.Trim();
+        Endereco = string.IsNullOrWhiteSpace(endereco) ? null : endereco.Trim();
+        SetUpdatedAt();
+
+        return Result.Success();
+    }
 }

@@ -1,6 +1,7 @@
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 using Scheduling.Infrastructure.Persistence;
 using Scheduling.Infrastructure.Repositories;
 
@@ -31,9 +32,9 @@ public class AgendamentoListByBranchTests
 
         await using (var seedContext = CreateContext(dbName, organization))
         {
-            var profA = Profissional.Criar(organization, "Dr. A", "Clínico", branchId: branchA).Value;
-            var profB = Profissional.Criar(organization, "Dr. B", "Clínico", branchId: branchB).Value;
-            var profSemBranch = Profissional.Criar(organization, "Dr. C", "Clínico").Value; // sem branch
+            var profA = Profissional.Criar(organization, "Dr. A", "Clínico", TipoContrato.Clt, branchId: branchA).Value;
+            var profB = Profissional.Criar(organization, "Dr. B", "Clínico", TipoContrato.Clt, branchId: branchB).Value;
+            var profSemBranch = Profissional.Criar(organization, "Dr. C", "Clínico", TipoContrato.Clt).Value; // sem branch
 
             profissionalA = profA.Id;
             profissionalB = profB.Id;
@@ -70,8 +71,8 @@ public class AgendamentoListByBranchTests
 
         await using (var seedContext = CreateContext(dbName, organization))
         {
-            var profA = Profissional.Criar(organization, "Dr. A", "Clínico", branchId: Guid.NewGuid()).Value;
-            var profB = Profissional.Criar(organization, "Dr. B", "Clínico", branchId: Guid.NewGuid()).Value;
+            var profA = Profissional.Criar(organization, "Dr. A", "Clínico", TipoContrato.Clt, branchId: Guid.NewGuid()).Value;
+            var profB = Profissional.Criar(organization, "Dr. B", "Clínico", TipoContrato.Clt, branchId: Guid.NewGuid()).Value;
             seedContext.Profissionais.AddRange(profA, profB);
 
             var salaId = Guid.NewGuid();

@@ -1,5 +1,7 @@
 using Identity.Application.Commands.CreateInvite;
 using Identity.Application.Commands.CreateOrganization;
+using Identity.Application.Commands.UpdateOrganization;
+using Identity.Application.Queries.GetOrganization;
 using Identity.Application.Queries.GetOrganizationInvites;
 using Identity.Contracts;
 using Identity.Domain.Enums;
@@ -82,6 +84,34 @@ public sealed class OrganizationsController : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Tela de configurações (item futuro anunciado na task 039) — dados editáveis da organization.
+    /// Mesma defesa contra IDOR do resto do controller: <paramref name="id"/> tem que bater com o
+    /// organization_id do token.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Owner,Admin", Policy = "RequireActiveOrganization")]
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    {
+        if (_currentUser.OrganizationId is null || _currentUser.OrganizationId != id)
+            return Forbid();
+
+        var result = await _mediator.Send(new GetOrganizationQuery(id), ct);
+        return result.IsSuccess ? Ok(result.Value) : NotFound(new { error = result.Error.Message });
+    }
+
+    /// <summary>Tela de configurações — edita Nome/Cnpj/Telefone/Endereco. Mesma defesa contra IDOR.</summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Owner,Admin", Policy = "RequireActiveOrganization")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOrganizationRequest request, CancellationToken ct)
+    {
+        if (_currentUser.OrganizationId is null || _currentUser.OrganizationId != id)
+            return Forbid();
+
+        var result = await _mediator.Send(new UpdateOrganizationCommand(id, request.Nome, request.Cnpj, request.Telefone, request.Endereco), ct);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error.Message });
+    }
+
     /// <summary>Lista convites enviados pela organization (Owner/Admin). Mesma defesa contra IDOR do POST acima.</summary>
     [HttpGet("{id:guid}/invites")]
     [Authorize(Roles = "Owner,Admin", Policy = "RequireActiveOrganization")]
@@ -97,6 +127,9 @@ public sealed class OrganizationsController : ControllerBase
 
 /// <summary>Corpo da requisição de criação de organization — Cnpj/Telefone/Endereco opcionais (sprint-11), configuráveis depois.</summary>
 public sealed record CreateOrganizationRequest(string Nome, string? Cnpj = null, string? Telefone = null, string? Endereco = null);
+
+/// <summary>Corpo da requisição de edição de organization — tela de configurações.</summary>
+public sealed record UpdateOrganizationRequest(string Nome, string? Cnpj = null, string? Telefone = null, string? Endereco = null);
 
 /// <summary>Corpo da requisição de convite — organization nunca é informado aqui (vem da rota/token).</summary>
 public sealed record CreateInviteRequest(string Email, Role Role);

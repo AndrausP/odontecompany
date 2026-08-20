@@ -1,6 +1,7 @@
 using Infrastructure.Common.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 using Scheduling.Infrastructure.Lookups;
 using Scheduling.Infrastructure.Persistence;
 
@@ -26,12 +27,12 @@ public class ProfissionalLookupTests
 
         await using (var seedContext = CreateContext(dbName))
         {
-            var ativo = Profissional.Criar(organizationId, "Dra. Ativa", "Ortodontia", userId, branchId).Value;
+            var ativo = Profissional.Criar(organizationId, "Dra. Ativa", "Ortodontia", TipoContrato.Clt, userId: userId, branchId: branchId).Value;
 
-            var inativo = Profissional.Criar(organizationId, "Dr. Demitido", "Clínico Geral").Value;
+            var inativo = Profissional.Criar(organizationId, "Dr. Demitido", "Clínico Geral", TipoContrato.Clt).Value;
             inativo.Desativar();
 
-            var outraOrganization = Profissional.Criar(outroOrganizationId, "Fora", "Endodontia").Value;
+            var outraOrganization = Profissional.Criar(outroOrganizationId, "Fora", "Endodontia", TipoContrato.Clt).Value;
 
             seedContext.Profissionais.AddRange(ativo, inativo, outraOrganization);
             await seedContext.SaveChangesAsync();

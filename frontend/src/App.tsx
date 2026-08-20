@@ -12,6 +12,14 @@ const LandingPage = lazy(() =>
   import('./features/marketing/LandingPage').then((m) => ({ default: m.LandingPage })),
 )
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() =>
+  import('./features/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+)
+const ResetPasswordPage = lazy(() =>
+  import('./features/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+)
+const TermsPage = lazy(() => import('./features/marketing/LegalPages').then((m) => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('./features/marketing/LegalPages').then((m) => ({ default: m.PrivacyPage })))
 const SignupPage = lazy(() => import('./features/auth/SignupPage').then((m) => ({ default: m.SignupPage })))
 const OnboardingPage = lazy(() =>
   import('./features/organizations/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
@@ -26,6 +34,9 @@ const EstoquePage = lazy(() => import('./features/estoque/EstoquePage').then((m)
 const ReportsPage = lazy(() => import('./features/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const ComprovantePage = lazy(() =>
   import('./features/reports/ComprovantePage').then((m) => ({ default: m.ComprovantePage })),
+)
+const SettingsPage = lazy(() =>
+  import('./features/organizations/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
 
 function RouteFallback() {
@@ -55,6 +66,10 @@ export function App() {
         <Route path="/" element={<LandingGate />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/termos" element={<TermsPage />} />
+        <Route path="/privacidade" element={<PrivacyPage />} />
+        <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+        <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
         {/* Sem RequireOrganization de propósito — é exatamente a rota que precisa funcionar pra
             quem ainda NÃO tem organization nenhuma (signup recém-feito). */}
@@ -108,6 +123,14 @@ export function App() {
               mensagem clara de "sem permissão" em vez disso, então o check de role é feito dentro
               do próprio ComprovantePage. */}
           <Route path="/comprovante" element={<ComprovantePage />} />
+          <Route
+            path="/configuracoes"
+            element={
+              <ProtectedRoute roles={['Owner', 'Admin']}>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -75,6 +75,7 @@ public class InviteFlowTests
         // antes — Owner é ADITIVO, não deveria ter afrouxado autorização de mais ninguém).
         var owner = await AuthFlow.SignupAsync(_client, AuthFlow.UniqueEmail("owner"));
         var org = await AuthFlow.CreateOrganizationAsync(_client, owner.AccessToken);
+        await AuthFlow.SelectPlanAsync(_client, org.AccessToken); // limite de usuário por plano (auditoria pré-venda) — sem plano, aceitar convite bloqueia
 
         var memberEmail = AuthFlow.UniqueEmail("membro");
         const string memberPassword = "Senha@12345";

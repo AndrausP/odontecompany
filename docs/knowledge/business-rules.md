@@ -158,6 +158,21 @@
   dedicada ainda, dívida técnica nomeada) — fonte: pedido do usuário, task
   docs/tasks/039-sistema-planos-onboarding-completo.md.
 
+- [2026-08-19] Limite de USUÁRIO por plano (não só filial) — Starter até 3, Profissional/Rede
+  ilimitado, mesma fonte `PlanCatalog.LimiteUsuarios`. Checado no ACCEPT do convite (não na
+  criação), bloqueado com `Membership.LimiteDoPlanoAtingido` — fonte: auditoria pré-venda, task
+  docs/tasks/041-remediacao-auditoria-pre-venda.md.
+- [2026-08-19] Downgrade de plano bloqueia se a organização tem mais filiais ATIVAS do que o
+  plano novo permite (`Subscription.DowngradeExcedeFiliaisAtivas`) — fecha dívida nomeada desde a
+  039 — fonte: task docs/tasks/041-remediacao-auditoria-pre-venda.md.
+- [2026-08-19] Cobrança da plataforma é MANUAL por fora nesta fase (decisão do usuário, sem chave
+  Stripe disponível) — escolher um plano libera acesso na hora sem cobrar, aviso explícito na UI
+  (`PlanCards`). Stripe real fica pra quando a integração acontecer de verdade — fonte: task
+  docs/tasks/041-remediacao-auditoria-pre-venda.md.
+
+- [2026-08-20] Cadastro de Profissional aceita Tipo de Contrato (CLT/PJ/Autônomo, obrigatório) e Comissão % padrão (opcional, só informativo — Billing não lê automaticamente ainda). Email opcional dispara convite Role.Dentista; sem email, o profissional é só recurso da Agenda, sem login — fonte: task docs/tasks/042-cadastro-dentista-com-convite.md.
+- [2026-08-20] Aceitar um convite vincula automaticamente o usuário a qualquer Profissional pendente (sem UserId) com o mesmo email na organização — sem passo manual. Vínculo é definitivo pro primeiro que aceitar (não sobrescreve) — fonte: task docs/tasks/042-cadastro-dentista-com-convite.md.
+
 Registrar novas com `/law [regra]` ou via primeira pergunta do `/bigtask`.
 
 ## Regras inferidas

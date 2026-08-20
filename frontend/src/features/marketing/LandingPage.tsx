@@ -211,7 +211,15 @@ function Footer() {
           <ShieldCheck size={16} />
           <span>Dados protegidos, consentimento LGPD nativo no cadastro do paciente.</span>
         </div>
-        <span>© {new Date().getFullYear()} OdontoPlatform</span>
+        <div className="flex items-center gap-4">
+          <Link to="/termos" className="hover:text-ink">
+            Termos de Uso
+          </Link>
+          <Link to="/privacidade" className="hover:text-ink">
+            Privacidade
+          </Link>
+          <span>© {new Date().getFullYear()} OdontoPlatform</span>
+        </div>
       </div>
     </footer>
   )

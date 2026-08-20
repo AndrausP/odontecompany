@@ -14,6 +14,10 @@ public sealed class BranchLookup : IBranchLookup
         => _context.Branches.AsNoTracking().IgnoreQueryFilters()
             .AnyAsync(u => u.Id == branchId && u.OrganizationId == organizationId && u.Ativo, ct);
 
+    public Task<int> CountAtivasAsync(Guid organizationId, CancellationToken ct = default)
+        => _context.Branches.AsNoTracking().IgnoreQueryFilters()
+            .CountAsync(b => b.OrganizationId == organizationId && b.Ativo, ct);
+
     public async Task<IReadOnlyDictionary<Guid, string>> ListarNomesAsync(Guid organizationId, CancellationToken ct = default)
         => await _context.Branches
             .AsNoTracking()

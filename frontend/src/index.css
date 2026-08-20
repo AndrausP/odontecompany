@@ -51,10 +51,10 @@
 
 /* Overrides DARK — mesma variável, valor diferente. Tudo que usa @theme acima
    passa a refletir o dark automaticamente, sem trocar nenhuma classe no componente.
-   Task 032 (sprint-9): superfícies mais próximas de preto + brand puxado pra um
-   teal-ciano mais vívido — pedido explícito do usuário pra bater com as fotos dark de
-   referência (docs/images/...09_45_06.../...10_17_17...). Light NÃO muda (usuário
-   escolheu só as fotos dark como alvo desta rodada) — ver docs/decisions.md. */
+   Paleta verde+preto (pedido do usuário, sessão de config) — substitui o teal-ciano/roxo/azul
+   da task 032: brand agora é verde puro sobre preto (mesma família do pinho do light, só mais
+   vívido pro fundo escuro), sem tom secundário estranho à marca. Light NÃO muda — já era verde
+   sobre branco. Ver docs/decisions.md. */
 .dark {
   --color-surface: #0A0F0C;
   --color-surface-raised: #111814;
@@ -66,13 +66,12 @@
   --color-ink-secondary: #AEBDB4;
   --color-ink-muted: #8A9A91;
 
-  --color-brand: #2DD4BF;
-  --color-brand-hover: #52E6C9;
-  --color-brand-subtle: #0F231D;
-  --color-on-brand: #06170F; /* inverte — ver nota no §1.2 do design-system.md. Continua escuro
-    (não branco como na foto): contraste calculado no update do design-system.md — texto branco
-    sobre o teal/azul do gradiente cairia pra ~1.9:1, falha AA. Prioridade WCAG mantida mesmo com
-    fidelidade de cor priorizada pro resto da paleta. */
+  --color-brand: #22C55E;
+  --color-brand-hover: #4ADE80;
+  --color-brand-subtle: #0F2318;
+  --color-on-brand: #06170F; /* texto escuro sobre o brand: branco sobre #22C55E cai pra ~2.3:1,
+    falha AA — mesmo raciocínio de contraste que já existia aqui antes, só recalculado pro verde
+    novo. Continua ~9:1, WCAG folgado. */
 
   --color-success: #3FC08D;
   --color-success-subtle: #12271C;
@@ -83,7 +82,7 @@
   --color-info: #6FA8DC;
   --color-info-subtle: #142433;
 
-  --color-focus-ring: #2DD4BF;
+  --color-focus-ring: #22C55E;
 }
 
 body {
@@ -99,23 +98,25 @@ body {
   --grad-brand-to: var(--color-brand);
 }
 .dark {
-  --grad-brand-from: #2DD4BF;
-  --grad-brand-to: #3B82F6; /* contraste com --color-on-brand verificado nas 2 pontas (11:1 e
-    5.03:1) — ver docs/decisions.md */
+  /* Achatado igual o light (from == to) — paleta verde+preto não usa mais o 2º stop
+     azul/teal; gradiente unicolor mantém a classe funcionando sem virar botão sólido plano
+     de menos (leve profundidade some, aceito: prioridade era tirar a cor fora da marca). */
+  --grad-brand-from: var(--color-brand);
+  --grad-brand-to: var(--color-brand-hover);
 }
 .bg-brand-gradient {
   background-image: linear-gradient(135deg, var(--grad-brand-from), var(--grad-brand-to));
 }
 
-/* Flourish decorativo da sidebar — task 032, aproxima o blob roxo/verde borrado das fotos dark de
-   referência sem reproduzir a ilustração literalmente (custo/benefício). Só visível no dark;
-   `pointer-events-none` + `-z-10` dentro de um pai `relative overflow-hidden` (AppLayout aside) —
-   nunca cobre clique nem compete com o conteúdo real. */
+/* Flourish decorativo da sidebar — task 032, blob borrado no rodapé da sidebar. Paleta
+   verde+preto: era roxo+verde, virou monocromático (só verde em 2 intensidades) — nenhum tom
+   fora da marca. Só visível no dark; `pointer-events-none` + `-z-10` dentro de um pai `relative
+   overflow-hidden` (AppLayout aside) — nunca cobre clique nem compete com o conteúdo real. */
 .sidebar-flourish {
   opacity: 0;
   background:
     radial-gradient(circle at 20% 100%, color-mix(in srgb, var(--color-brand) 35%, transparent), transparent 60%),
-    radial-gradient(circle at 80% 75%, color-mix(in srgb, #7C6CF0 30%, transparent), transparent 55%);
+    radial-gradient(circle at 80% 75%, color-mix(in srgb, var(--color-brand-hover) 20%, transparent), transparent 55%);
   filter: blur(8px);
 }
 .dark .sidebar-flourish {

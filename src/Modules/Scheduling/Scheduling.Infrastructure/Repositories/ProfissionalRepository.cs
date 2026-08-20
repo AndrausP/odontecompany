@@ -26,4 +26,13 @@ public sealed class ProfissionalRepository : IProfissionalRepository
 
         return await query.OrderBy(p => p.Nome).ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<Profissional>> ListPendentesPorEmailAcrossOrganizationsAsync(Guid organizationId, string email, CancellationToken ct = default)
+    {
+        var normalizado = email.Trim().ToLowerInvariant();
+        return await _context.Profissionais
+            .IgnoreQueryFilters() // mesmo motivo dos demais métodos "AcrossOrganizations" do projeto
+            .Where(p => p.OrganizationId == organizationId && p.UserId == null && p.Email == normalizado)
+            .ToListAsync(ct);
+    }
 }

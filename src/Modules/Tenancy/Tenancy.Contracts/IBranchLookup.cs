@@ -10,6 +10,9 @@ public interface IBranchLookup
     /// <summary>Existe branch ATIVA com este Id, pertencente a este organization?</summary>
     Task<bool> ExistsAsync(Guid organizationId, Guid branchId, CancellationToken ct = default);
 
+    /// <summary>Quantas branches ATIVAS o organization tem — usado por Subscriptions (downgrade de plano, auditoria pré-venda) sem depender de Tenancy.Domain/Infrastructure.</summary>
+    Task<int> CountAtivasAsync(Guid organizationId, CancellationToken ct = default);
+
     /// <summary>
     /// Nome de toda branch do organization (BranchId → Nome), batch, sem N+1 — INCLUI inativas
     /// (task 022: filial derivada de Profissional.BranchId não pode virar "id desconhecido" no

@@ -74,6 +74,7 @@ public class TokenWithoutOrganizationTests
         // Owner com organization própria convida o email do usuário sem-org.
         var owner = await AuthFlow.SignupAsync(_client, AuthFlow.UniqueEmail("owner"));
         var org = await AuthFlow.CreateOrganizationAsync(_client, owner.AccessToken);
+        await AuthFlow.SelectPlanAsync(_client, org.AccessToken); // limite de usuário por plano (auditoria pré-venda) — sem plano, aceitar convite bloqueia
 
         var invitedEmail = AuthFlow.UniqueEmail("convidado");
         var inviteResponse = await AuthFlow.CreateInviteAsync(_client, org.AccessToken, org.OrganizationId, invitedEmail, Role.Dentista);

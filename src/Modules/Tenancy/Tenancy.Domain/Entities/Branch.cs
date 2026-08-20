@@ -52,4 +52,19 @@ public class Branch : AggregateRoot, IMustHaveOrganization
         Ativo = false;
         SetUpdatedAt();
     }
+
+    /// <summary>Tela de configurações (mesma iniciativa da Organization) — edita os campos que a
+    /// criação aceita. Mesma validação de <see cref="Create"/>.</summary>
+    public Result AtualizarDados(string nome, string? endereco, string? telefone)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+            return Result.Failure(DomainErrors.Branch.NomeObrigatorio);
+
+        Nome = nome.Trim();
+        Endereco = string.IsNullOrWhiteSpace(endereco) ? null : endereco.Trim();
+        Telefone = string.IsNullOrWhiteSpace(telefone) ? null : telefone.Trim();
+        SetUpdatedAt();
+
+        return Result.Success();
+    }
 }

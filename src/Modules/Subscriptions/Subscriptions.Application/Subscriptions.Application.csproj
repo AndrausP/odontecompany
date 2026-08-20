@@ -3,6 +3,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Subscriptions.Domain\Subscriptions.Domain.csproj" />
     <ProjectReference Include="..\Subscriptions.Contracts\Subscriptions.Contracts.csproj" />
+    <!-- Auditoria pré-venda (downgrade de plano) — só Tenancy.Contracts (IBranchLookup), nunca
+         Tenancy.Domain/Infrastructure. Mesma fronteira ACL usada na direção oposta por
+         Tenancy.Application → Subscriptions.Contracts (limite de filial). -->
+    <ProjectReference Include="..\..\Tenancy\Tenancy.Contracts\Tenancy.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Application.Common\Application.Common.csproj" />
   </ItemGroup>
 

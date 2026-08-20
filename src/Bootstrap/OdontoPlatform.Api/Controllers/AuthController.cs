@@ -1,5 +1,7 @@
+using Identity.Application.Commands.ForgotPassword;
 using Identity.Application.Commands.Login;
 using Identity.Application.Commands.Refresh;
+using Identity.Application.Commands.ResetPassword;
 using Identity.Application.Commands.Signup;
 using Identity.Application.Commands.SwitchOrganization;
 using Identity.Contracts;
@@ -71,6 +73,29 @@ public sealed class AuthController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return result.IsSuccess ? Ok(result.Value) : Unauthorized(new { error = result.Error.Message });
+    }
+
+    /// <summary>
+    /// Pede um link de redefinição de senha (auditoria pré-venda — antes disso, não existia
+    /// NENHUMA recuperação de senha no produto). Sempre 200, exista ou não o email — anti-
+    /// enumeração. Rate limit por IP (mesma política de superfície anônima do signup).
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting("password-reset")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command, CancellationToken ct)
+    {
+        await _mediator.Send(command, ct);
+        return Ok(new { message = "Se o email existir, enviamos as instruções de redefinição." });
+    }
+
+    /// <summary>Conclui a redefinição a partir do token recebido no passo anterior. Revoga todas as sessões ativas do usuário.</summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return result.IsSuccess ? Ok(new { message = "Senha redefinida." }) : BadRequest(new { error = result.Error.Message });
     }
 
     /// <summary>Troca um refresh token válido por um novo par access+refresh (rotação: o token antigo é invalidado).</summary>

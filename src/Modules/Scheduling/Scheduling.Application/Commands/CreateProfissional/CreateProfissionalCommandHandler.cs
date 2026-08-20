@@ -32,7 +32,9 @@ public sealed class CreateProfissionalCommandHandler : IRequestHandler<CreatePro
         if (request.BranchId is not null && !await _branchLookup.ExistsAsync(request.OrganizationId, request.BranchId.Value, cancellationToken))
             return Result.Failure<ProfissionalDto>(DomainErrors.Profissional.BranchInvalida);
 
-        var profissionalResult = Profissional.Criar(request.OrganizationId, request.Nome, request.Especialidade, request.UserId, request.BranchId);
+        var profissionalResult = Profissional.Criar(
+            request.OrganizationId, request.Nome, request.Especialidade, request.TipoContrato,
+            request.PercentualComissaoDefault, request.Email, request.UserId, request.BranchId);
         if (profissionalResult.IsFailure)
             return Result.Failure<ProfissionalDto>(profissionalResult.Error);
 

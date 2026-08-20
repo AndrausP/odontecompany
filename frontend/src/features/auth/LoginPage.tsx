@@ -62,7 +62,13 @@ export function LoginPage() {
           </div>
 
           <div>
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Senha</Label>
+              {/* Auditoria pré-venda — antes não existia nenhum jeito de recuperar acesso. */}
+              <Link to="/esqueci-senha" className="mb-1 text-xs font-medium text-brand hover:text-brand-hover">
+                Esqueci minha senha
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"

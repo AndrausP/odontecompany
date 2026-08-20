@@ -87,6 +87,10 @@ namespace Scheduling.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
                     b.Property<string>("Especialidade")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -100,6 +104,15 @@ namespace Scheduling.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("PercentualComissaoDefault")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("TipoContrato")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -109,6 +122,8 @@ namespace Scheduling.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OrganizationId", "Ativo");
+
+                    b.HasIndex("OrganizationId", "Email");
 
                     b.ToTable("Profissionais", (string)null);
                 });

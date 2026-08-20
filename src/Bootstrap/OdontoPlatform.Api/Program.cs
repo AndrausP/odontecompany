@@ -181,6 +181,18 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         }));
+
+    // Mesma política do signup — forgot-password é a mesma classe de superfície anônima que
+    // escreve/lê o banco por email cru, alvo natural de enumeração/spam (auditoria pré-venda).
+    options.AddPolicy("password-reset", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        }));
 });
 
 // ── CORS (frontend React/Vite em origem separada) ────────────────────────

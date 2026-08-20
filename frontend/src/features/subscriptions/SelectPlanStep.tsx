@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { listPlans, selectPlan } from './api'
 import { getApiErrorMessage } from '../../lib/query-client'
-import { Button } from '../../components/ui/Button'
-import { cn } from '../../lib/cn'
+import { PlanCards } from './PlanCards'
 import type { PlanTier } from '../../types/subscriptions'
 
 interface SelectPlanStepProps {
@@ -15,6 +14,9 @@ interface SelectPlanStepProps {
  * "Escolher plano" já ativa na hora (backend `SelectPlanCommandHandler`) — o botão "Assinar com
  * cartão" (checkout Stripe) é esqueleto, não aparece aqui de propósito (POST /subscriptions já
  * resolve o gate; checkout fica pra quando o Stripe estiver conectado de verdade).
+ *
+ * Cards vêm de `PlanCards` (compartilhado com a tela de configurações) — antes era uma lista de
+ * linhas simples, virou grid de 3 cards com destaque pro Profissional.
  */
 export function SelectPlanStep({ onSelected }: SelectPlanStepProps) {
   const { data: plans, isLoading, isError } = useQuery({ queryKey: ['subscriptions', 'plans'], queryFn: listPlans })
@@ -29,30 +31,11 @@ export function SelectPlanStep({ onSelected }: SelectPlanStepProps) {
 
   return (
     <div className="space-y-3">
-      {plans.map((plan) => (
-        <div
-          key={plan.tier}
-          className={cn(
-            'flex items-center justify-between gap-4 rounded-lg border p-4',
-            plan.tier === 'Profissional' ? 'border-brand bg-brand-subtle/40' : 'border-border',
-          )}
-        >
-          <div>
-            <p className="text-sm font-semibold text-ink">{plan.nome}</p>
-            <p className="text-xs text-ink-muted">
-              {plan.limiteFiliais >= 999 ? 'Unidades ilimitadas' : `Até ${plan.limiteFiliais} unidade${plan.limiteFiliais > 1 ? 's' : ''}`}
-              {plan.precoMensal > 0 ? ` · R$ ${plan.precoMensal.toFixed(0)}/mês` : ' · Sob consulta'}
-            </p>
-          </div>
-          <Button
-            variant={plan.tier === 'Profissional' ? 'primary' : 'secondary'}
-            disabled={mutation.isPending}
-            onClick={() => mutation.mutate(plan.tier)}
-          >
-            {mutation.isPending && mutation.variables === plan.tier ? 'Escolhendo…' : 'Escolher'}
-          </Button>
-        </div>
-      ))}
+      <PlanCards
+        plans={plans}
+        pendingTier={mutation.isPending ? mutation.variables : undefined}
+        onSelect={(tier) => mutation.mutate(tier)}
+      />
 
       {mutation.isError && <p className="text-sm text-danger">{getApiErrorMessage(mutation.error)}</p>}
     </div>

@@ -263,14 +263,14 @@ export function ComprovantePage() {
         <div className="print-area">
           <Card>
             <CardHeader>
-              <CardTitle>OdontoPlatform</CardTitle>
+              {/* Nome da CLÍNICA, não do produto (auditoria pré-venda) — este comprovante vai pro
+                  paciente da organização, não é material do vendor da plataforma. Fallback só
+                  cobre o instante entre navegar pra cá e `me` resolver. */}
+              <CardTitle>{organizationName ?? 'OdontoPlatform'}</CardTitle>
               <p className="text-sm font-medium text-ink">Comprovante de Pagamento de Comissão</p>
             </CardHeader>
             <CardBody className="space-y-4">
               <div className="space-y-1 text-sm text-ink-secondary">
-                <p>
-                  <span className="font-medium text-ink">Organização:</span> {organizationName ?? '—'}
-                </p>
                 <p>
                   <span className="font-medium text-ink">Profissional:</span>{' '}
                   {emissao.nomeProfissional ?? 'Todos os profissionais'}

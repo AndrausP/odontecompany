@@ -508,3 +508,28 @@ inteiramente responsabilidade dos `navigate()`/`setStep()` explícitos de cada c
 um cache assíncrono (`data`), todo guard de "atalho" baseado só em `data` precisa checar também
 se o usuário já está numa transição de `step` deliberada — senão o guard corrida contra a própria
 intenção do fluxo assim que o cache atualiza no meio de uma transição.
+
+## Gate de negócio novo quebra testes de integração que nunca passaram pelo funil completo (task 041)
+
+**Task:** docs/tasks/041-remediacao-auditoria-pre-venda.md
+**Causa raiz:** `AcceptInviteCommandHandler` ganhou checagem de limite de usuário por plano
+(`ISubscriptionLookup.LimiteDeUsuariosAsync` — 0 se a organização não tem plano ativo, mesmo
+raciocínio já usado pro limite de filial desde a task 039). `Api.IntegrationTests` cria
+organization via `AuthFlow.CreateOrganizationAsync` e nunca chamava o endpoint de escolher plano —
+no produto real isso é impossível (o gate de `GetMe`/`RequireOrganization` força Empresa→Plano
+antes de qualquer convite fazer sentido), mas o helper de teste pulava direto pra convite/accept.
+**Sintoma:** 3 testes que antes passavam (`InviteFlowTests.Should_Reject_NonOwnerNonAdmin_CreatingInvite`
+×2, `TokenWithoutOrganizationTests.Should_Allow_AcceptInvite_When_TokenHasNoOrganization`) passaram
+a devolver 404 no `POST /api/invites/{token}/accept` — confuso à primeira vista porque
+`InvitesController.Accept` devolve 404 genérico pra QUALQUER `Result.Failure` (anti-enumeração,
+não só "token não existe"), então o erro real (`Membership.LimiteDoPlanoAtingido`) ficava
+escondido atrás do mesmo status code de "convite inválido".
+**Correção:** `AuthFlow.SelectPlanAsync` novo (`POST /api/subscriptions`); chamado logo após
+`CreateOrganizationAsync` nos 2 arquivos de teste afetados, antes de qualquer convite. Não foi
+"afrouxar" o gate — foi consertar a fixture pra refletir o funil real.
+**Como evitar de novo:** Antes de adicionar um gate de negócio que depende de estado que hoje é
+opcional/pulável nos testes (plano, papel, feature flag), rodar a suíte completa de integração —
+não só os testes do módulo tocado — ANTES de considerar a mudança pronta. Um endpoint que devolve
+o mesmo status code genérico pra toda falha (anti-enumeração) esconde qual `DomainErrors` real
+disparou; ao investigar um 404/400 inesperado num teste, ler o corpo da resposta (`error.Message`),
+não só o status code.

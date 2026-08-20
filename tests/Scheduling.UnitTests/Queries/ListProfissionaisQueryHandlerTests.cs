@@ -2,6 +2,7 @@ using Moq;
 using Scheduling.Application.Interfaces;
 using Scheduling.Application.Queries.ListProfissionais;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 
 namespace Scheduling.UnitTests.Queries;
 
@@ -21,7 +22,7 @@ public class ListProfissionaisQueryHandlerTests
     [Test]
     public async Task Should_ReturnMappedProfissionais_When_RepositoryHasData()
     {
-        var profissional = Profissional.Criar(Guid.NewGuid(), "Dra. Ana", "Ortodontia").Value;
+        var profissional = Profissional.Criar(Guid.NewGuid(), "Dra. Ana", "Ortodontia", TipoContrato.Clt).Value;
         _profissionalRepository.Setup(r => r.ListAsync(false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Profissional> { profissional });
 

@@ -2,6 +2,7 @@ using Moq;
 using Scheduling.Application.Commands.MarcarAgendamentoConcluido;
 using Scheduling.Application.Interfaces;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 
 namespace Scheduling.UnitTests.Commands;
 
@@ -80,7 +81,7 @@ public class MarcarAgendamentoConcluidoCommandHandlerTests
 
         _agendamentoRepository.Setup(r => r.GetByIdAsync(agendamento.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agendamento);
         _profissionalRepository.Setup(r => r.GetByIdAsync(agendamento.ProfissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", donoDaAgenda).Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt, userId: donoDaAgenda).Value);
 
         var result = await _handler.Handle(new MarcarAgendamentoConcluidoCommand(agendamento.Id, 200m, outroDentista, "Dentista"), CancellationToken.None);
 
@@ -97,7 +98,7 @@ public class MarcarAgendamentoConcluidoCommandHandlerTests
 
         _agendamentoRepository.Setup(r => r.GetByIdAsync(agendamento.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agendamento);
         _profissionalRepository.Setup(r => r.GetByIdAsync(agendamento.ProfissionalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", dentistaUserId).Value);
+            .ReturnsAsync(Profissional.Criar(Guid.NewGuid(), "Dr. João", "Ortodontia", TipoContrato.Clt, userId: dentistaUserId).Value);
 
         var result = await _handler.Handle(new MarcarAgendamentoConcluidoCommand(agendamento.Id, 200m, dentistaUserId, "Dentista"), CancellationToken.None);
 

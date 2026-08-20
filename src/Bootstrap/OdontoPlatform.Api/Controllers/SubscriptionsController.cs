@@ -35,7 +35,7 @@ public sealed class SubscriptionsController : ControllerBase
     public IActionResult GetPlans()
     {
         var plans = PlanCatalog.All()
-            .Select(p => new PlanDto(p.Tier.ToString(), p.Nome, p.LimiteFiliais, p.PrecoMensal))
+            .Select(p => new PlanDto(p.Tier.ToString(), p.Nome, p.LimiteFiliais, p.LimiteUsuarios, p.PrecoMensal))
             .ToList();
 
         return Ok(plans);

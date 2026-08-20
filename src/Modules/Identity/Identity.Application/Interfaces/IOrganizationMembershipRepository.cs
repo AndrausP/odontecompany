@@ -15,5 +15,14 @@ public interface IOrganizationMembershipRepository
     /// <summary>Mesma exceção do método acima — usado no refresh (reeleger a org do token) e no switch-organization.</summary>
     Task<OrganizationMembership?> GetByUserAndOrganizationAcrossOrganizationsAsync(Guid userId, Guid organizationId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Quantas memberships ATIVAS a organização tem — limite de usuário por plano (auditoria
+    /// pré-venda, mesmo raciocínio de <c>IBranchRepository.ListByOrganizationAsync</c> pro limite
+    /// de filial). <c>IgnoreQueryFilters</c>: chamado a partir de <c>AcceptInviteCommandHandler</c>,
+    /// que roda no contexto do usuário CONVIDADO — a organização do convite pode não ser a
+    /// organização ativa do token dele ainda.
+    /// </summary>
+    Task<int> CountActiveByOrganizationAcrossOrganizationsAsync(Guid organizationId, CancellationToken ct = default);
+
     Task AddAsync(OrganizationMembership membership, CancellationToken ct = default);
 }

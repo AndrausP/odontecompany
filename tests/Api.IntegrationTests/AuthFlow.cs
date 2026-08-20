@@ -58,6 +58,20 @@ internal static class AuthFlow
         return (await response.Content.ReadFromJsonAsync<CreateOrganizationResultDto>(JsonOptions))!;
     }
 
+    /// <summary>
+    /// Escolhe um plano pra organization do token (sem cobrança real — ver `SelectPlanCommandHandler`).
+    /// Necessário antes de convidar/aceitar convite desde a auditoria pré-venda (task 041+):
+    /// `AcceptInviteCommandHandler` passou a checar limite de usuário por plano, e organização sem
+    /// plano ativo tem limite 0 (mesmo raciocínio já usado pro limite de filial, task 039) — sem
+    /// isso NENHUM convite seria aceito nos testes.
+    /// </summary>
+    public static async Task SelectPlanAsync(HttpClient client, string accessToken, string tier = "Profissional")
+    {
+        WithBearer(client, accessToken);
+        var response = await client.PostAsJsonAsync("/api/subscriptions", new { Tier = tier });
+        response.EnsureSuccessStatusCode();
+    }
+
     /// <summary>Owner/Admin (token escopado à organization) convida um email com um papel — resposta crua (o teste decide o que checar: status, ou o token em claro no corpo).</summary>
     public static async Task<HttpResponseMessage> CreateInviteAsync(HttpClient client, string ownerAccessToken, Guid organizationId, string email, Role role)
     {

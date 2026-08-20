@@ -9,4 +9,6 @@ namespace Identity.Application.DTOs;
 /// responsabilidade). O frontend chama <c>POST /api/auth/switch-organization</c> em seguida se
 /// quiser um token escopado à organization recém-afiliada.
 /// </summary>
-public sealed record AcceptInviteResultDto(Guid OrganizationId, Role Role);
+/// <summary><see cref="Email"/> adicionado na task 042 — o controller usa pra disparar
+/// `LinkProfissionalUserCommand` (Scheduling) sem precisar de outra consulta.</summary>
+public sealed record AcceptInviteResultDto(Guid OrganizationId, Role Role, string Email);

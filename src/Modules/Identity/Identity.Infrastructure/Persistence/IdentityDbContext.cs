@@ -29,6 +29,7 @@ public sealed class IdentityDbContext : DbContext, IOrganizationAwareDbContext, 
     public DbSet<OrganizationMembership> OrganizationMemberships => Set<OrganizationMembership>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Invite> Invites => Set<Invite>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     // Npgsql só aceita DateTime Kind=Utc pra "timestamp with time zone" — ver nota em
     // PatientsDbContext / Infrastructure.Common.Persistence (achado validando endpoints, sprint-11).

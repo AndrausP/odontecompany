@@ -29,5 +29,13 @@ public sealed class SubscriptionLookup : ISubscriptionLookup
         return subscription is null ? 0 : PlanCatalog.Get(subscription.Tier).LimiteFiliais;
     }
 
+    public async Task<int> LimiteDeUsuariosAsync(Guid organizationId, CancellationToken ct = default)
+    {
+        var subscription = await _context.Subscriptions.AsNoTracking().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId && s.Status == SubscriptionStatus.Ativa, ct);
+
+        return subscription is null ? 0 : PlanCatalog.Get(subscription.Tier).LimiteUsuarios;
+    }
+
     private static SubscriptionDto ToDto(Subscription s) => new(s.Id, s.OrganizationId, s.Tier.ToString(), s.Status.ToString(), s.CreatedAt);
 }

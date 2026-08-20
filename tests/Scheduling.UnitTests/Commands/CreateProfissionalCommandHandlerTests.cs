@@ -2,6 +2,7 @@ using Moq;
 using Scheduling.Application.Commands.CreateProfissional;
 using Scheduling.Application.Interfaces;
 using Scheduling.Domain.Entities;
+using Scheduling.Domain.Enums;
 using Tenancy.Contracts;
 
 namespace Scheduling.UnitTests.Commands;
@@ -26,7 +27,7 @@ public class CreateProfissionalCommandHandlerTests
     [Test]
     public async Task Should_CreateProfissional_When_BranchIdIsNull()
     {
-        var command = new CreateProfissionalCommand(Guid.NewGuid(), "Dra. Ana", "Ortodontia", null, null);
+        var command = new CreateProfissionalCommand(Guid.NewGuid(), "Dra. Ana", "Ortodontia", TipoContrato.Clt, null, null, null, null);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -40,7 +41,7 @@ public class CreateProfissionalCommandHandlerTests
     {
         _branchLookup.Setup(u => u.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var command = new CreateProfissionalCommand(Guid.NewGuid(), "Dra. Ana", "Ortodontia", null, Guid.NewGuid());
+        var command = new CreateProfissionalCommand(Guid.NewGuid(), "Dra. Ana", "Ortodontia", TipoContrato.Clt, null, null, null, Guid.NewGuid());
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.That(result.IsSuccess, Is.False);
@@ -55,10 +56,25 @@ public class CreateProfissionalCommandHandlerTests
         var branchId = Guid.NewGuid();
         _branchLookup.Setup(u => u.ExistsAsync(organizationId, branchId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var command = new CreateProfissionalCommand(organizationId, "Dra. Ana", "Ortodontia", null, branchId);
+        var command = new CreateProfissionalCommand(organizationId, "Dra. Ana", "Ortodontia", TipoContrato.Clt, null, null, null, branchId);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.That(result.IsSuccess, Is.True);
         Assert.That(result.Value.BranchId, Is.EqualTo(branchId));
+    }
+
+    /// <summary>Auditoria pré-venda (task 042) — Tipo de Contrato/Comissão/Email chegam intactos no DTO.</summary>
+    [Test]
+    public async Task Should_CarryNewFields_When_AllProvided()
+    {
+        var command = new CreateProfissionalCommand(
+            Guid.NewGuid(), "Dra. Camila", "Ortodontia", TipoContrato.Pj, 30.5m, "camila@clinica.com", null, null);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value.TipoContrato, Is.EqualTo("Pj"));
+        Assert.That(result.Value.PercentualComissaoDefault, Is.EqualTo(30.5m));
+        Assert.That(result.Value.Email, Is.EqualTo("camila@clinica.com"));
     }
 }

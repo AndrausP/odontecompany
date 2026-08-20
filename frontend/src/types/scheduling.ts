@@ -16,11 +16,17 @@ export interface Agendamento {
   updatedAt: string | null
 }
 
-/** Espelha Scheduling.Contracts.ProfissionalDto. */
+/** Espelha Scheduling.Domain.Enums.TipoContrato. */
+export type TipoContrato = 'Clt' | 'Pj' | 'Autonomo'
+
+/** Espelha Scheduling.Contracts.ProfissionalDto (+TipoContrato/PercentualComissaoDefault/Email, task 042). */
 export interface Profissional {
   id: string
   nome: string
   especialidade: string
+  tipoContrato: TipoContrato
+  percentualComissaoDefault: number | null
+  email: string | null
   userId: string | null
   branchId: string | null
   ativo: boolean
